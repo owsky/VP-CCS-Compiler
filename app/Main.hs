@@ -6,7 +6,8 @@ import Text.Megaparsec (errorBundlePretty)
 
 main :: IO ()
 main = do
-  let input = "a.0 | b.P \\ {a,b} + c.0"
+  -- let input = "a.0 | b.P \\ {a,b} + c.0"
+  let input = "CS = 'pub.'coin.coffee.CS"
   putStrLn $ "Input: " ++ unpack input
   let tokens = tokenize input
   case tokens of

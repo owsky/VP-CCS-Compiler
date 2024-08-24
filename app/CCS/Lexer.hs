@@ -17,6 +17,7 @@ data Token
   | TPar Token Token
   | TRes Token Token
   | TRel Token Token
+  | TAss Token Token
   deriving (Show)
 
 -- | Parses action names and process names
@@ -53,7 +54,8 @@ operatorTable =
     ],
     [binary "." TPre], -- Prefixing: Expr.Expr
     [binary "|" TPar], -- Parallel composition: Expr | Expr
-    [binary "+" TSum] -- Summation: Expr + Expr
+    [binary "+" TSum], -- Summation: Expr + Expr
+    [binary "=" TAss] -- Assignment: Expr = Expr
   ]
 
 -- | Token parser
