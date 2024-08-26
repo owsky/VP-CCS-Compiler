@@ -1,65 +1,74 @@
 module CCS.Lexer.Lexer where
 
-import CCS.Lexer.Utils (Parser, binary, lexeme, sc, squareParens, symbol)
-import Control.Monad.Combinators.Expr (Operator (InfixN), makeExprParser)
-import Data.Text (Text, pack, unpack)
+import CCS.Lexer.Utils (Parser, binary, comma, curlyParens, lexeme, roundParens, sc, slash)
+import CCS.Parser.Grammars (Label (..), RelabellingFunction (..), RelabellingMapping (..), getLabelName)
+import Control.Monad.Combinators.Expr (Operator, makeExprParser)
+import Data.Set (Set, fromList)
+import Data.Text (Text, pack)
 import Data.Void (Void)
-import Text.Megaparsec (MonadParsec (eof, try), anySingle, between, choice, manyTill_, parse, some)
+import Text.Megaparsec (MonadParsec (eof, try), choice, parse, sepBy1, some, (<|>))
 import Text.Megaparsec.Char (char, letterChar)
-import Text.Megaparsec.Debug (dbg)
 import Text.Megaparsec.Error (ParseErrorBundle)
 
 -- | AST of tokens for lexer
 data Token
-  = TExpr Text
+  = TokId Text
+  | RelFn RelabellingFunction
+  | ResSet (Set Label)
   | TPre Token Token
   | TSum Token Token
   | TPar Token Token
   | TRes Token Token
   | TRel Token Token
   | TAss Token Token
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
 
--- | Parses action names and process names
-pName :: Parser Token
-pName = dbg "pName" $ TExpr . pack <$> lexeme (choice [some letterChar, (:) <$> char '\'' <*> some letterChar, pure <$> char '0'])
+pTokId :: Parser Token
+pTokId = TokId . pack <$> lexeme (choice [some letterChar, (:) <$> char '\'' <*> some letterChar, pure <$> char '0'])
 
--- | Parses the content between curly braces as text for the restriction operator
-pRes :: Parser Token
-pRes = try $ do
-  (res, brace) <- lexeme $ manyTill_ anySingle (char '}')
-  return $ TExpr $ pack (res ++ [brace])
+pLabelInput :: Parser Label
+pLabelInput = Input . pack <$> lexeme (some letterChar)
 
--- | Parses the content between square braces as text for the relabelling operator
-pRel :: Parser Token
-pRel = dbg "pRel" $ do
-  rel <- lexeme $ squareParens (some (choice [symbol ",", symbol "/", pack . pure <$> letterChar]))
-  return $ TExpr $ pack ("[" ++ unpack (mconcat rel) ++ "]")
+pLabelOutput :: Parser Label
+pLabelOutput = Output . pack <$> lexeme ((:) <$> char '\'' <*> some letterChar)
 
--- | Uses the given parser to parse the content enclosed in round braces
-parens :: Parser a -> Parser a
-parens = between (symbol "(") (symbol ")")
+pLabel :: Parser Label
+pLabel = choice [pLabelOutput, pLabelInput]
+
+-- | Parser for action relabelling functions
+pActionRelabel :: Parser RelabellingMapping
+pActionRelabel = do
+  ogLabel <- pLabel
+  _ <- slash
+  newLabel <- pLabel
+  return RelabellingMapping {from = getLabelName ogLabel, to = getLabelName newLabel}
+
+pRelFn :: Parser Token
+pRelFn = try $ do
+  m <- pActionRelabel `sepBy1` comma
+  _ <- char ']' <|> fail "Expected closing square bracket ']'"
+  return $ RelFn (RelabellingFunction {mappings = m})
+
+pResSet :: Parser Token
+pResSet = do
+  labels <- curlyParens $ pLabel `sepBy1` comma
+  return $ ResSet (fromList labels)
 
 -- | Terms parses for makeExprParser
 pTerm :: Parser Token
-pTerm = dbg "pTerm" $ choice [parens pToken, pName]
+pTerm = choice [roundParens pToken, pRelFn, pTokId, pResSet]
 
 -- | Operator table for makeExprParser
 operatorTable :: [[Operator Parser Token]]
 operatorTable =
-  [ [ binary "\\" TRes, -- Restriction: Expr \ {...}
-      InfixN relabelOperator -- Relabelling: Expr[...]
+  [ [ binary "\\" TRes, -- Restriction: A \ {a,b,c}
+      binary "[" TRel -- Relabeling: A[a/b,c/d]
     ],
-    [binary "." TPre], -- Prefixing: Expr.Expr
-    [binary "|" TPar], -- Parallel composition: Expr | Expr
-    [binary "+" TSum], -- Summation: Expr + Expr
-    [binary "=" TAss] -- Assignment: Expr = Expr
+    [binary "." TPre], -- Prefixing: a.A
+    [binary "|" TPar], -- Parallel composition: A | B
+    [binary "+" TSum], -- Summation: A + B
+    [binary "=" TAss] -- Assignment: A = b.B
   ]
-
-relabelOperator :: Parser (Token -> Token -> Token)
-relabelOperator = do
-  innerToken <- pRel
-  return (\a _ -> TRel a innerToken)
 
 -- | Token parser
 pToken :: Parser Token

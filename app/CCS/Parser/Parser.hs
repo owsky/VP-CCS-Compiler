@@ -31,7 +31,7 @@ parseAction = parse (pAction <* eof) ""
 
 tokenToAction :: Token -> Maybe Action
 tokenToAction token = case token of
-  TExpr text -> do
+  TokId text -> do
     let action = parseAction text
     case action of
       Left _ -> Nothing
@@ -57,21 +57,16 @@ parseRelabellingFunction = parse (pRelabellingFunction <* eof) ""
 
 tokenToRelabelFn :: Token -> Maybe RelabellingFunction
 tokenToRelabelFn token = case token of
-  TExpr text -> do
-    let fn = parseRelabellingFunction text
-    case fn of
-      Left _ -> Nothing
-      Right f -> Just f
+  RelFn f -> Just f
   _ -> Nothing
 
 tokenToLabelSet :: Token -> Maybe (Set Label)
 tokenToLabelSet token = case token of
-  TExpr text -> do
-    undefined
+  ResSet s -> Just s
   _ -> Nothing
 
 tokenToProcess :: Token -> Maybe Process
-tokenToProcess (TExpr text) = Just (ProcessName text)
+tokenToProcess (TokId text) = Just (ProcessName text)
 tokenToProcess (TPre left right) = do
   action <- tokenToAction left
   process <- tokenToProcess right
@@ -98,3 +93,4 @@ tokenToProcess (TAss left right) = do
   case lhv of
     ProcessName name -> Just $ Assignment name rhv
     _ -> Nothing
+tokenToProcess _ = fail "Wrong"
