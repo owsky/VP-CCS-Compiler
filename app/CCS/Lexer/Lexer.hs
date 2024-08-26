@@ -1,13 +1,13 @@
-module CCS.Lexer where
+module CCS.Lexer.Lexer where
 
-import Control.Monad (void)
-import Control.Monad.Combinators.Expr (Operator, makeExprParser)
-import Data.Text (Text, pack)
+import CCS.Lexer.Utils (Parser, binary, lexeme, sc, squareParens, symbol)
+import Control.Monad.Combinators.Expr (Operator (InfixN), makeExprParser)
+import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
-import Text.Megaparsec (MonadParsec (eof), anySingle, between, choice, manyTill, parse, some)
+import Text.Megaparsec (MonadParsec (eof, try), anySingle, between, choice, manyTill_, parse, some)
 import Text.Megaparsec.Char (char, letterChar)
+import Text.Megaparsec.Debug (dbg)
 import Text.Megaparsec.Error (ParseErrorBundle)
-import Utils (Parser, binary, lexeme, symbol)
 
 -- | AST of tokens for lexer
 data Token
@@ -18,25 +18,23 @@ data Token
   | TRes Token Token
   | TRel Token Token
   | TAss Token Token
-  deriving (Show)
+  deriving (Eq, Ord, Show)
 
 -- | Parses action names and process names
 pName :: Parser Token
-pName = TExpr . pack <$> lexeme (choice [some letterChar, (:) <$> char '\'' <*> some letterChar, pure <$> char '0'])
+pName = dbg "pName" $ TExpr . pack <$> lexeme (choice [some letterChar, (:) <$> char '\'' <*> some letterChar, pure <$> char '0'])
 
 -- | Parses the content between curly braces as text for the restriction operator
 pRes :: Parser Token
-pRes = do
-  void $ symbol "{"
-  res <- lexeme $ manyTill anySingle (char '}')
-  return $ TExpr $ pack res
+pRes = try $ do
+  (res, brace) <- lexeme $ manyTill_ anySingle (char '}')
+  return $ TExpr $ pack (res ++ [brace])
 
 -- | Parses the content between square braces as text for the relabelling operator
 pRel :: Parser Token
-pRel = do
-  void $ symbol "["
-  rel <- lexeme $ manyTill anySingle (char ']')
-  return $ TExpr $ pack rel
+pRel = dbg "pRel" $ do
+  rel <- lexeme $ squareParens (some (choice [symbol ",", symbol "/", pack . pure <$> letterChar]))
+  return $ TExpr $ pack ("[" ++ unpack (mconcat rel) ++ "]")
 
 -- | Uses the given parser to parse the content enclosed in round braces
 parens :: Parser a -> Parser a
@@ -44,13 +42,13 @@ parens = between (symbol "(") (symbol ")")
 
 -- | Terms parses for makeExprParser
 pTerm :: Parser Token
-pTerm = choice [parens pToken, pName, pRes, pRel]
+pTerm = dbg "pTerm" $ choice [parens pToken, pName]
 
 -- | Operator table for makeExprParser
 operatorTable :: [[Operator Parser Token]]
 operatorTable =
   [ [ binary "\\" TRes, -- Restriction: Expr \ {...}
-      binary "[" TRel -- Relabelling: Expr[...]
+      InfixN relabelOperator -- Relabelling: Expr[...]
     ],
     [binary "." TPre], -- Prefixing: Expr.Expr
     [binary "|" TPar], -- Parallel composition: Expr | Expr
@@ -58,10 +56,15 @@ operatorTable =
     [binary "=" TAss] -- Assignment: Expr = Expr
   ]
 
+relabelOperator :: Parser (Token -> Token -> Token)
+relabelOperator = do
+  innerToken <- pRel
+  return (\a _ -> TRel a innerToken)
+
 -- | Token parser
 pToken :: Parser Token
 pToken = makeExprParser pTerm operatorTable
 
 -- | Tokenizes the given text
 tokenize :: Text -> Either (ParseErrorBundle Text Void) Token
-tokenize = parse (pToken <* eof) "stdin"
+tokenize = parse (sc *> pToken <* eof) ""

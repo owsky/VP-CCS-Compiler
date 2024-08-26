@@ -1,4 +1,4 @@
-module Utils where
+module CCS.Lexer.Utils where
 
 import Control.Monad.Combinators.Expr (Operator (InfixL))
 import Data.Text (Text)
@@ -33,6 +33,12 @@ squareParens = between (symbol "[") (symbol "]")
 -- | Parses the content between curly braces
 curlyParens :: Parser a -> Parser a
 curlyParens = between (symbol "{") (symbol "}")
+
+openSquareParen :: Parser Text
+openSquareParen = symbol "["
+
+closeSquareParen :: Parser Text
+closeSquareParen = symbol "]"
 
 -- | Parses the dot character
 dot :: Parser Text

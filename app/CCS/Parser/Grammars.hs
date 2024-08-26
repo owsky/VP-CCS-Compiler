@@ -1,20 +1,21 @@
 module CCS.Parser.Grammars where
 
 import Data.Set (Set)
+import Data.Text (Text)
 
 -- | AST for labels, i.e., channel names and their complements
 data Label
-  = Input String
-  | Output String
+  = Input Text
+  | Output Text
   deriving (Eq, Ord, Show)
 
-getLabelName :: Label -> String
+getLabelName :: Label -> Text
 getLabelName (Input str) = str
 getLabelName (Output str) = str
 
 data RelabellingMapping = RelabellingMapping
-  { from :: String,
-    to :: String
+  { from :: Text,
+    to :: Text
   }
   deriving (Show, Eq)
 
@@ -31,10 +32,11 @@ data Action
 
 -- | AST for processes, i.e., process literals or process operators
 data Process
-  = ProcessName String
+  = ProcessName Text
   | ActionPrefix Action Process
   | Sum Process Process
   | Parallel Process Process
   | Relabelling Process RelabellingFunction
   | Restriction Process (Set Label)
+  | Assignment Text Process
   deriving (Eq, Show)
