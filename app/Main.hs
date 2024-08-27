@@ -1,11 +1,11 @@
 module Main (main) where
 
-import CCS.Parse (parseInput)
+import CCS.Parser (parseInput)
 import Data.Text (unpack)
 
 main :: IO ()
 main = do
-  let input = "A[a/b]"
+  let input = "A + B = A"
   -- let input = "a.0 | b.P \\ {a,b} + c.0"
   -- let input = "CS = 'pub.'coin.coffee.CS"
   -- let input = "A = τ.Z | a.B + 'a.C"

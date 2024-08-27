@@ -1,4 +1,4 @@
-module CCS.Parser.Grammars where
+module CCS.Grammars where
 
 import Data.Set (Set)
 import Data.Text (Text)
@@ -13,16 +13,9 @@ getLabelName :: Label -> Text
 getLabelName (Input str) = str
 getLabelName (Output str) = str
 
-data RelabellingMapping = RelabellingMapping
-  { from :: Text,
-    to :: Text
-  }
-  deriving (Show, Eq)
+data RelabellingMapping = RelabellingMapping Text Text deriving (Show, Eq)
 
-newtype RelabellingFunction = RelabellingFunction
-  { mappings :: [RelabellingMapping]
-  }
-  deriving (Show, Eq)
+newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving (Show, Eq)
 
 -- | AST for actions, i.e., transitions over channel names or internal
 data Action
@@ -39,4 +32,16 @@ data Process
   | Relabelling Process RelabellingFunction
   | Restriction Process (Set Label)
   | Assignment Text Process
+  deriving (Eq, Show)
+
+data Token
+  = TokId Text
+  | RelFn RelabellingFunction
+  | ResSet (Set Label)
+  | TPre Token Token
+  | TSum Token Token
+  | TPar Token Token
+  | TRes Token Token
+  | TRel Token Token
+  | TAss Token Token
   deriving (Eq, Show)

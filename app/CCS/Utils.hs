@@ -1,9 +1,9 @@
-module CCS.Lexer.Utils where
+module CCS.Utils where
 
 import Control.Monad.Combinators.Expr (Operator (InfixL))
 import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, between, empty)
+import Text.Megaparsec (Parsec, between, empty, lookAhead, try)
 import Text.Megaparsec.Char (space1)
 import Text.Megaparsec.Char.Lexer qualified as L
 
@@ -63,3 +63,6 @@ tick = symbol "'"
 -- | Creates a polymorphic, left-associative, binary operator
 binary :: forall a. Text -> (a -> a -> a) -> Operator Parser a
 binary name f = InfixL (f <$ symbol name)
+
+binary' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
+binary' name f = InfixL (f <$ (try (lookAhead (symbol name)) *> pure ()))

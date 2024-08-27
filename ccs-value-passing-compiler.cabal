@@ -64,14 +64,9 @@ executable ccs-value-passing-compiler
 
   -- Modules included in this executable, other than Main.
   other-modules:
-    CCS.Lexer.Lexer
-    CCS.Lexer.Utils
-    CCS.Parse
-    CCS.Parser.Action
-    CCS.Parser.Grammars
-    CCS.Parser.Parser
-    CCS.Parser.Process
-    CCS.Parser.Utils
+    CCS.Grammars
+    CCS.Parser
+    CCS.Utils
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
