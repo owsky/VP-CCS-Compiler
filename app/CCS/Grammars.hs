@@ -40,7 +40,10 @@ data Statement
 
 -- | AST for tokens, used by the parser
 data Token
-  = TokId Text
+  = TProc Text
+  | TActIn Text
+  | TActOut Text
+  | TActTau
   | RelFn RelabellingFunction
   | ResSet (Set Label)
   | TPre Token Token
