@@ -13,15 +13,15 @@ getLabelName :: Label -> Text
 getLabelName (Input str) = str
 getLabelName (Output str) = str
 
-data RelabellingMapping = RelabellingMapping Text Text deriving (Show, Eq)
-
-newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving (Show, Eq)
-
 -- | AST for actions, i.e., transitions over channel names or internal
 data Action
   = ActionName Label
   | Tau
   deriving (Eq, Show)
+
+data RelabellingMapping = RelabellingMapping Text Text deriving (Show, Eq)
+
+newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving (Show, Eq)
 
 -- | AST for processes, i.e., process literals or process operators
 data Process
@@ -31,9 +31,14 @@ data Process
   | Parallel Process Process
   | Relabelling Process RelabellingFunction
   | Restriction Process (Set Label)
-  | Assignment Text Process
   deriving (Eq, Show)
 
+-- | AST for statements
+data Statement
+  = Assignment Text Process
+  deriving (Show)
+
+-- | AST for tokens, used by the parser
 data Token
   = TokId Text
   | RelFn RelabellingFunction

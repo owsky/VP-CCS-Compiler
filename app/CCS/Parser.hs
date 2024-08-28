@@ -1,7 +1,7 @@
 module CCS.Parser where
 
-import CCS.Grammars (Action (..), Label (..), Process (..), RelabellingFunction (..), RelabellingMapping (..), Token (..), getLabelName)
-import CCS.Utils (Parser, binary, binary', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol)
+import CCS.Grammars (Action (..), Label (..), Process (..), RelabellingFunction (..), RelabellingMapping (..), Statement (..), Token (..), getLabelName)
+import CCS.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Set (Set, fromList)
 import Data.Text (Text, pack)
@@ -11,9 +11,11 @@ import Text.Megaparsec (MonadParsec (eof), choice, label, parse, sepBy1, some, (
 import Text.Megaparsec.Char (char, letterChar)
 import Text.Megaparsec.Error (ParseErrorBundle, errorBundlePretty)
 
+-- | Parser for token identifiers, i.e., actions and process literals
 pTokId :: Parser Token
 pTokId = TokId . pack <$> lexeme (choice [some letterChar, (:) <$> char '\'' <*> some letterChar, pure <$> char '0']) <?> "Token identifier"
 
+-- | Parser for labels, i.e., used for named transitions
 pLabel :: Parser Label
 pLabel =
   choice
@@ -29,11 +31,13 @@ pActionRelabel = label "Relabelling mapping, e.g., a/b" $ do
   _ <- slash
   RelabellingMapping (getLabelName ogLabel) . getLabelName <$> pLabel
 
+-- | Parser for relabelling functions
 pRelFn :: Parser Token
 pRelFn = label "Relabelling function, e.g., [a/b, c/d]" $ do
   mappings <- squareParens $ pActionRelabel `sepBy1` comma
   return (RelFn $ RelabellingFunction mappings)
 
+-- | Parser for channel restriction sets
 pResSet :: Parser Token
 pResSet = label "Restriction set, e.g., {a,b,c}" $ do
   labels <- curlyParens $ pLabel `sepBy1` comma
@@ -46,13 +50,13 @@ pTerm = choice [roundParens pToken, pRelFn, pResSet, pTokId]
 -- | Operator table for makeExprParser
 operatorTable :: [[Operator Parser Token]]
 operatorTable =
-  [ [ binary "\\" TRes, -- Restriction: A \ {a,b,c}
-      binary' "[" TRel -- Relabeling: A[a/b,c/d]
+  [ [ binaryR "\\" TRes, -- Restriction: A \ {a,b,c}
+      binaryR' "[" TRel -- Relabeling: A[a/b,c/d]
     ],
-    [binary "." TPre], -- Prefixing: a.A
-    [binary "|" TPar], -- Parallel composition: A | B
-    [binary "+" TSum], -- Summation: A + B
-    [binary "=" TAss] -- Assignment: A = b.B
+    [binaryR "." TPre], -- Prefixing: a.A
+    [binaryL "|" TPar], -- Parallel composition: A | B
+    [binaryL "+" TSum], -- Summation: A + B
+    [binaryL "=" TAss] -- Assignment: A = b.B
   ]
 
 -- | Token parser
@@ -63,28 +67,32 @@ pToken = makeExprParser pTerm operatorTable
 tokenize :: Text -> Either (ParseErrorBundle Text Void) Token
 tokenize = parse (sc *> pToken <* eof) ""
 
+-- | Parser for actions
 pAction :: Parser Action
 pAction = choice [Tau <$ symbol "τ" <?> "Tau action", ActionName <$> lexeme pLabel <?> "Channel name"] <?> "Channel"
 
+-- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
-tokenToAction token = case token of
-  TokId text -> do
-    let action = parse (pAction <* eof) "" text
-    case action of
-      Left _ -> Left "Error while parsing action"
-      Right a -> Right a
-  _ -> Left "Expecting action, got something else"
+tokenToAction (TokId text) = do
+  let action = parse (pAction <* eof) "" text
+  case action of
+    Left _ -> Left "Error while parsing action name"
+    Right a -> Right a
+tokenToAction other = Left $ "Expecting action, got something else: " ++ show other
 
+-- | Attempts to convert a given into into a relabelling function
 tokenToRelabelFn :: Token -> Either String RelabellingFunction
 tokenToRelabelFn token = case token of
   RelFn f -> Right f
   _ -> Left "Error while parsing the relabeling function"
 
+-- | Attempts to convert a given into into a label set for restriction
 tokenToLabelSet :: Token -> Either String (Set Label)
 tokenToLabelSet token = case token of
   ResSet s -> Right s
   _ -> Left "Error while parsing the restriction set"
 
+-- | Attempts to convert a given into into a process
 tokenToProcess :: Token -> Either String Process
 tokenToProcess (TokId text) = Right $ ProcessName text
 tokenToProcess (TPre left right) = do
@@ -107,19 +115,30 @@ tokenToProcess (TRes left right) = do
   process <- tokenToProcess left
   labelSet <- tokenToLabelSet right
   return $ Restriction process labelSet
-tokenToProcess (TAss left right) = do
-  lhs <- tokenToProcess left
-  rhs <- tokenToProcess right
-  case lhs of
-    ProcessName name -> Right $ Assignment name rhs
-    _ -> Left "You can only assign to process names"
-tokenToProcess _ = Left "Something wrong occurred"
+tokenToProcess token = Left $ "Expected a process, got: " ++ show token
 
-parseInput :: Text -> Either String Process
+-- | Attempts to convert a given into into a statement
+tokenToStatement :: Token -> Either String Statement
+tokenToStatement (TAss left right) = do
+  let lhs = tokenToProcess left
+  case lhs of
+    Left err -> Left $ "Expected a process on the left-hand side of the assignment, got: " ++ err
+    Right lProc -> do
+      case lProc of
+        ProcessName name -> do
+          let rhs = tokenToProcess right
+          case rhs of
+            Left err -> Left err
+            Right rProc -> return $ Assignment name rProc
+        _ -> Left $ "Expected a process name on the left-hand side of the assignment, got: " ++ show lProc
+tokenToStatement token = Left $ "Expecting a statement, got: " ++ show token
+
+-- | Attempts to parse the given text into a statement
+parseInput :: Text -> Either String Statement
 parseInput l = do
   let toks = tokenize l
   case toks of
     Left err -> Left $ errorBundlePretty err
     Right tokens -> do
       trace ("Debug - Token: " ++ show tokens) $ do
-        tokenToProcess tokens
+        tokenToStatement tokens

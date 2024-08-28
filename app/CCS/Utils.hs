@@ -1,6 +1,7 @@
 module CCS.Utils where
 
-import Control.Monad.Combinators.Expr (Operator (InfixL))
+import Control.Monad.Combinators.Expr (Operator (InfixL, InfixR))
+import Data.Functor (($>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (Parsec, between, empty, lookAhead, try)
@@ -34,16 +35,6 @@ squareParens = between (symbol "[") (symbol "]")
 curlyParens :: Parser a -> Parser a
 curlyParens = between (symbol "{") (symbol "}")
 
-openSquareParen :: Parser Text
-openSquareParen = symbol "["
-
-closeSquareParen :: Parser Text
-closeSquareParen = symbol "]"
-
--- | Parses the dot character
-dot :: Parser Text
-dot = symbol "."
-
 -- | Parses the comma character
 comma :: Parser Text
 comma = symbol ","
@@ -52,17 +43,18 @@ comma = symbol ","
 slash :: Parser Text
 slash = symbol "/"
 
--- | Parses the backslash character
-backslash :: Parser Text
-backslash = symbol "\\"
-
--- | Parses the tick character
-tick :: Parser Text
-tick = symbol "'"
-
 -- | Creates a polymorphic, left-associative, binary operator
-binary :: forall a. Text -> (a -> a -> a) -> Operator Parser a
-binary name f = InfixL (f <$ symbol name)
+binaryL :: forall a. Text -> (a -> a -> a) -> Operator Parser a
+binaryL name f = InfixL (f <$ symbol name)
 
-binary' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
-binary' name f = InfixL (f <$ (try (lookAhead (symbol name)) *> pure ()))
+-- | Creates a polymorphic, right-associative, binary operator
+binaryR :: forall a. Text -> (a -> a -> a) -> Operator Parser a
+binaryR name f = InfixR (f <$ symbol name)
+
+-- | Creates a polymorphic, left-associated, binary operator that does not consume the operator it matches
+binaryL' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
+binaryL' name f = InfixL (f <$ (try (lookAhead (symbol name)) $> ()))
+
+-- | Creates a polymorphic, left-associated, binary operator that does not consume the operator it matches
+binaryR' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
+binaryR' name f = InfixR (f <$ (try (lookAhead (symbol name)) $> ()))
