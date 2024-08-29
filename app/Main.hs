@@ -4,19 +4,19 @@ import CCS.Grammars (Statement)
 import CCS.Parser (parseInput)
 import Control.Monad (forM)
 import Data.Maybe (catMaybes)
-import Data.Text (Text, lines, null, pack, strip)
+import Data.Text (Text, lines, pack)
 import Prelude hiding (lines, null)
 
 processLine :: Text -> IO (Maybe Statement)
-processLine input
-  | null (strip input) = return Nothing
-  | otherwise = do
-      let parsed = parseInput input
-      case parsed of
-        Left err -> do
-          putStrLn $ "Error: " ++ err
-          return Nothing
-        Right p -> return (Just p)
+processLine input = do
+  let parsed = parseInput input
+  case parsed of
+    Left err -> do
+      putStrLn $ "Error: " ++ err
+      return Nothing
+    Right mStatement -> case mStatement of
+      Just s -> return $ Just s
+      Nothing -> return Nothing
 
 processLines :: [Text] -> IO [Statement]
 processLines inputLines = do

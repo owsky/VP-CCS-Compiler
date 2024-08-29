@@ -4,7 +4,7 @@ import Control.Monad.Combinators.Expr (Operator (InfixL, InfixR))
 import Data.Functor (($>))
 import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, between, empty, lookAhead, try)
+import Text.Megaparsec (Parsec, between, lookAhead, try)
 import Text.Megaparsec.Char (space1)
 import Text.Megaparsec.Char.Lexer qualified as L
 
@@ -13,7 +13,7 @@ type Parser = Parsec Void Text
 
 -- | Space consumer
 sc :: Parser ()
-sc = L.space space1 empty empty
+sc = L.space space1 (L.skipLineComment "#") (L.skipBlockComment "/*" "*/")
 
 -- | Consumes any trailing whitespace after parsing the given parser.
 lexeme :: Parser a -> Parser a

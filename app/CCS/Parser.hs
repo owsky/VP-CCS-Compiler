@@ -3,11 +3,12 @@ module CCS.Parser where
 import CCS.Grammars (Action (..), Label (..), Process (..), RelabellingFunction (..), RelabellingMapping (..), Statement (..), Token (..), getLabelName)
 import CCS.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
+import Data.Functor (void, ($>))
 import Data.Set (Set, fromList)
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Debug.Trace (trace)
-import Text.Megaparsec (MonadParsec (eof), choice, label, many, parse, sepBy1, (<?>))
+import Text.Megaparsec (MonadParsec (eof, try), choice, label, many, parse, sepBy1, (<?>))
 import Text.Megaparsec.Char (char, letterChar, lowerChar, upperChar)
 import Text.Megaparsec.Error (ParseErrorBundle, errorBundlePretty)
 
@@ -79,9 +80,17 @@ operatorTable =
 pToken :: Parser Token
 pToken = makeExprParser pTerm operatorTable
 
+tryPToken :: Parser (Maybe Token)
+tryPToken = do
+  void sc
+  choice
+    [ Just <$> try pToken,
+      eof $> Nothing
+    ]
+
 -- | Tokenizes the given text
-tokenize :: Text -> Either (ParseErrorBundle Text Void) Token
-tokenize = parse (sc *> pToken <* eof) ""
+tokenize :: Text -> Either (ParseErrorBundle Text Void) (Maybe Token)
+tokenize = parse tryPToken ""
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
@@ -138,11 +147,15 @@ tokenToStatement (TAss left right) = do
 tokenToStatement token = Left $ "Expecting a statement, got: " ++ show token
 
 -- | Attempts to parse the given text into a statement
-parseInput :: Text -> Either String Statement
+parseInput :: Text -> Either String (Maybe Statement)
 parseInput l = do
-  let toks = tokenize l
-  case toks of
+  let eTok = tokenize l
+  case eTok of
     Left err -> Left $ errorBundlePretty err
-    Right tokens -> do
-      trace ("Debug - Token: " ++ show tokens) $ do
-        tokenToStatement tokens
+    Right mTok -> do
+      case mTok of
+        Just tok -> do
+          trace ("Debug - Token: " ++ show tok) $ do
+            statement <- tokenToStatement tok
+            return $ Just statement
+        Nothing -> return Nothing
