@@ -27,7 +27,7 @@ newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving 
 data Process
   = ProcessName Text
   | ActionPrefix Action Process
-  | Sum Process Process
+  | Choice Process Process
   | Parallel Process Process
   | Relabelling Process RelabellingFunction
   | Restriction Process (Set Label)
@@ -36,20 +36,41 @@ data Process
 -- | AST for statements
 data Statement
   = Assignment Text Process
-  deriving (Show)
+  | IfThenElse Text Statement Statement
+  deriving (Eq, Show)
+
+data AExpr
+  = AVal Int
+  | AVar Text
+  | Sum AExpr AExpr
+  | Min AExpr AExpr
+  | Mul AExpr AExpr
+  deriving (Eq, Show)
+
+data BExpr
+  = BVal Bool
+  | Eq AExpr AExpr
+  | Leq AExpr AExpr
+  | Not BExpr
+  | And BExpr BExpr
+  | Or BExpr BExpr
+  deriving (Eq, Show)
 
 -- | AST for tokens, used by the parser
 data Token
-  = TProc Text
+  = TArith AExpr
+  | TBool BExpr
+  | TProc Text
   | TActIn Text
   | TActOut Text
   | TActTau
   | RelFn RelabellingFunction
   | ResSet (Set Label)
   | TPre Token Token
-  | TSum Token Token
+  | TChoice Token Token
   | TPar Token Token
   | TRes Token Token
   | TRel Token Token
   | TAss Token Token
+  | TBranch Token Token Token
   deriving (Eq, Show)

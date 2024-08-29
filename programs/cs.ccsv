@@ -1,1 +1,0 @@
-Assignment "CS" (ActionPrefix (ActionName (Output "'pub")) (ActionPrefix (ActionName (Output "'coin")) (ActionPrefix (ActionName (Input "coffee")) (ProcessName "CS"))))

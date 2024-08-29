@@ -1,1 +1,10 @@
-CS = 'pub.'coin.coffee.CS
+# CS = 'pub.'coin.coffee.CS
+
+# Pred = in(x).Pred(x)
+# Pred(x) = if x == 0 then 'out(0).Pred else 'out(x - 1).Pred
+
+# Pred = if x == 0 then Pred else Pred
+
+# tt || (1 <= 5) && ff && (5 == 5)
+
+if 5 == 5 then P else Q

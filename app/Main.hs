@@ -1,7 +1,7 @@
 module Main (main) where
 
 import CCS.Grammars (Statement)
-import CCS.Parser (parseInput)
+import CCS.StatementParser (parseInput)
 import Control.Monad (forM)
 import Data.Maybe (catMaybes)
 import Data.Text (Text, lines, pack)

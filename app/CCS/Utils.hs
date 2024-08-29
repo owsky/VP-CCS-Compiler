@@ -1,6 +1,6 @@
 module CCS.Utils where
 
-import Control.Monad.Combinators.Expr (Operator (InfixL, InfixR))
+import Control.Monad.Combinators.Expr (Operator (InfixL, InfixN, InfixR, Prefix))
 import Data.Functor (($>))
 import Data.Text (Text)
 import Data.Void (Void)
@@ -43,6 +43,9 @@ comma = symbol ","
 slash :: Parser Text
 slash = symbol "/"
 
+prefix :: forall a. Text -> (a -> a) -> Operator Parser a
+prefix name f = Prefix (f <$ symbol name)
+
 -- | Creates a polymorphic, left-associative, binary operator
 binaryL :: forall a. Text -> (a -> a -> a) -> Operator Parser a
 binaryL name f = InfixL (f <$ symbol name)
@@ -58,3 +61,9 @@ binaryL' name f = InfixL (f <$ (try (lookAhead (symbol name)) $> ()))
 -- | Creates a polymorphic, left-associated, binary operator that does not consume the operator it matches
 binaryR' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
 binaryR' name f = InfixR (f <$ (try (lookAhead (symbol name)) $> ()))
+
+binaryN :: forall a. Text -> (a -> a -> a) -> Operator Parser a
+binaryN name f = InfixN (f <$ symbol name)
+
+unsignedInteger :: Parser Int
+unsignedInteger = lexeme L.decimal
