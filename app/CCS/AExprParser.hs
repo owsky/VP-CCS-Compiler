@@ -1,7 +1,7 @@
 module CCS.AExprParser where
 
 import CCS.Grammars (AExpr (..))
-import CCS.Utils (Parser, binaryL, lexeme, roundParens, sc, unsignedInteger)
+import CCS.Utils (Parser, binaryL, decimal, lexeme, roundParens, sc)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Text (Text, pack)
 import Data.Void (Void)
@@ -26,7 +26,7 @@ operatorTable =
   ]
 
 pAVal :: Parser AExpr
-pAVal = AVal <$> unsignedInteger <?> "Arithmetic value"
+pAVal = AVal <$> decimal <?> "Arithmetic value"
 
 pAVar :: Parser AExpr
 pAVar = AVar . pack <$> lexeme (some letterChar) <?> "Arithmetic variables"

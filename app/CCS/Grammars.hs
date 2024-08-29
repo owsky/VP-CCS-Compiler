@@ -9,6 +9,7 @@ data Label
   | Output Text
   deriving (Eq, Ord, Show)
 
+-- | Extracts the label's name
 getLabelName :: Label -> Text
 getLabelName (Input str) = str
 getLabelName (Output str) = str
@@ -19,8 +20,10 @@ data Action
   | Tau
   deriving (Eq, Show)
 
+-- | AST for relabellings, e.g., a/b
 data RelabellingMapping = RelabellingMapping Text Text deriving (Show, Eq)
 
+-- | AST for relabelling functions, e.g., [a/b, c/d]
 newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving (Show, Eq)
 
 -- | AST for processes, i.e., process literals or process operators
@@ -39,6 +42,7 @@ data Statement
   | IfThenElse Text Statement Statement
   deriving (Eq, Show)
 
+-- | AST for arithmetic expressions
 data AExpr
   = AVal Int
   | AVar Text
@@ -47,6 +51,7 @@ data AExpr
   | Mul AExpr AExpr
   deriving (Eq, Show)
 
+-- | AST for Boolean expressions
 data BExpr
   = BVal Bool
   | Eq AExpr AExpr

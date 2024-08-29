@@ -1,10 +1,10 @@
 module CCS.Utils where
 
-import Control.Monad.Combinators.Expr (Operator (InfixL, InfixN, InfixR, Prefix))
+import Control.Monad.Combinators.Expr (Operator (InfixL, InfixR, Prefix))
 import Data.Functor (($>))
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec, between, lookAhead, try)
+import Text.Megaparsec (Parsec, anySingle, between, lookAhead, manyTill, try)
 import Text.Megaparsec.Char (space1)
 import Text.Megaparsec.Char.Lexer qualified as L
 
@@ -43,6 +43,7 @@ comma = symbol ","
 slash :: Parser Text
 slash = symbol "/"
 
+-- | Creates a polymorphic prefix operator
 prefix :: forall a. Text -> (a -> a) -> Operator Parser a
 prefix name f = Prefix (f <$ symbol name)
 
@@ -62,8 +63,10 @@ binaryL' name f = InfixL (f <$ (try (lookAhead (symbol name)) $> ()))
 binaryR' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
 binaryR' name f = InfixR (f <$ (try (lookAhead (symbol name)) $> ()))
 
-binaryN :: forall a. Text -> (a -> a -> a) -> Operator Parser a
-binaryN name f = InfixN (f <$ symbol name)
+-- | Parses a decimal number
+decimal :: Parser Int
+decimal = lexeme L.decimal
 
-unsignedInteger :: Parser Int
-unsignedInteger = lexeme L.decimal
+-- Parser for capturing text until the given delimiter
+textUntil :: Parser Text -> Parser Text
+textUntil delimiter = pack <$> manyTill anySingle delimiter

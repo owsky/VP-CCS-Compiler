@@ -3,14 +3,14 @@ module CCS.Lexer where
 import CCS.AExprParser (pAExpr)
 import CCS.BExprParser (pBExpr)
 import CCS.Grammars (Label (..), RelabellingFunction (..), RelabellingMapping (..), Token (..), getLabelName)
-import CCS.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol)
+import CCS.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol, textUntil)
 import Control.Monad (void)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Functor (($>))
 import Data.Set (fromList)
 import Data.Text (Text, pack)
 import Data.Void (Void)
-import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, anySingle, choice, label, many, manyTill, parse, sepBy1, (<?>))
+import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, label, many, parse, sepBy1, (<?>))
 import Text.Megaparsec.Char (char, letterChar, lowerChar, string, upperChar)
 import Text.Megaparsec.Error (errorBundlePretty)
 
@@ -99,10 +99,6 @@ pResSet :: Parser Token
 pResSet = label "Restriction set, e.g., {a,b,c}" $ do
   labels <- curlyParens $ pLabel `sepBy1` comma
   return $ ResSet (fromList labels)
-
--- Parser for capturing text until the given delimiter
-textUntil :: Parser Text -> Parser Text
-textUntil delimiter = pack <$> manyTill anySingle delimiter
 
 -- | Parser for branching
 pTBranch :: Parser Token
