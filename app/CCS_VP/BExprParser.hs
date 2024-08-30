@@ -1,8 +1,8 @@
-module CCS.BExprParser where
+module CCS_VP.BExprParser where
 
-import CCS.AExprParser (pAExpr)
-import CCS.Grammars (BExpr (..))
-import CCS.Utils (Parser, binaryL, lexeme, prefix, roundParens, sc, symbol)
+import CCS_VP.AExprParser (pAExpr)
+import CCS_VP.Grammars (BExpr (..))
+import CCS_VP.Utils (Parser, binaryL, lexeme, prefix, roundParens, sc, symbol)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Text (Text)
 import Data.Void (Void)

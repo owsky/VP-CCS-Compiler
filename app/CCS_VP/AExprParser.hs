@@ -1,7 +1,7 @@
-module CCS.AExprParser where
+module CCS_VP.AExprParser where
 
-import CCS.Grammars (AExpr (..))
-import CCS.Utils (Parser, binaryL, decimal, lexeme, roundParens, sc)
+import CCS_VP.Grammars (AExpr (..))
+import CCS_VP.Utils (Parser, binaryL, decimal, lexeme, roundParens, sc)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Text (Text, pack)
 import Data.Void (Void)

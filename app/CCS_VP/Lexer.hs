@@ -1,9 +1,9 @@
-module CCS.Lexer where
+module CCS_VP.Lexer where
 
-import CCS.AExprParser (pAExpr)
-import CCS.BExprParser (pBExpr)
-import CCS.Grammars (Label (..), RelabellingFunction (..), RelabellingMapping (..), Token (..), getLabelName)
-import CCS.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol, textUntil)
+import CCS_VP.AExprParser (pAExpr)
+import CCS_VP.BExprParser (pBExpr)
+import CCS_VP.Grammars (Label (..), RelabellingFunction (..), RelabellingMapping (..), Token (..), getLabelName)
+import CCS_VP.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol, textUntil)
 import Control.Monad (void)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Functor (($>))
@@ -38,7 +38,7 @@ pToken = makeExprParser pTerm operatorTable
 
 -- | Terms parses for makeExprParser
 pTerm :: Parser Token
-pTerm = choice [roundParens pToken, pTBranch, pRelFn, pResSet, pTActTau, pActOut TActOut, pActIn TActIn, pTProc]
+pTerm = choice [roundParens pToken, pTBranch, pRelFn, pResSet, pTActTau, pActOutV, pActOut TActOut, pActInV, pActIn TActIn, pTProcV, pTProc]
 
 -- | Operator table for makeExprParser
 operatorTable :: [[Operator Parser Token]]
@@ -54,19 +54,37 @@ operatorTable =
 
 -- | Parser for process names
 pTProc :: Parser Token
-pTProc = TProc . pack <$> lexeme (choice [(:) <$> upperChar <*> many letterChar, pure <$> char '0']) <?> "Process name"
+pTProc = try (TProc . pack <$> lexeme (choice [(:) <$> upperChar <*> many letterChar, pure <$> char '0'])) <?> "Process name"
+
+pTProcV :: Parser Token
+pTProcV = try $ do
+  pName <- (:) <$> upperChar <*> many letterChar
+  v <- roundParens pAExpr
+  return $ TProcV (pack pName) (TArith v)
 
 -- | Polymorphic parser for input actions
 pActIn :: forall a. (Text -> a) -> Parser a
 pActIn constr = constr . pack <$> lexeme ((:) <$> lowerChar <*> many letterChar) <?> "Input action name"
 
+pActInV :: Parser Token
+pActInV = try $ do
+  aName <- (:) <$> lowerChar <*> many letterChar
+  v <- roundParens pAExpr
+  return $ TActInV (pack aName) (TArith v)
+
 -- | Polymorphic parser for output actions
 pActOut :: forall a. (Text -> a) -> Parser a
 pActOut constr = label "Output action name" $ do
-  tickChar <- char '\''
-  firstChar <- lowerChar
-  restChars <- many letterChar
-  return $ constr $ pack (tickChar : firstChar : restChars)
+  _ <- char '\''
+  aName <- (:) <$> lowerChar <*> many letterChar
+  return $ constr $ pack ("'" ++ aName)
+
+pActOutV :: Parser Token
+pActOutV = do
+  _ <- char '\''
+  aName <- (:) <$> lowerChar <*> many letterChar
+  v <- roundParens pAExpr
+  return $ TActOutV (pack $ "'" ++ aName) (TArith v)
 
 -- | Parser for implicit actions
 pTActTau :: Parser Token

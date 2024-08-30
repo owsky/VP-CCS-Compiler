@@ -1,4 +1,4 @@
-module CCS.Utils where
+module CCS_VP.Utils where
 
 import Control.Monad.Combinators.Expr (Operator (InfixL, InfixR, Prefix))
 import Data.Functor (($>))

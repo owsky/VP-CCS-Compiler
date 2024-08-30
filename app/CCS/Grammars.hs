@@ -9,11 +9,6 @@ data Label
   | Output Text
   deriving (Eq, Ord, Show)
 
--- | Extracts the label's name
-getLabelName :: Label -> Text
-getLabelName (Input str) = str
-getLabelName (Output str) = str
-
 -- | AST for actions, i.e., transitions over channel names or internal
 data Action
   = ActionName Label
@@ -38,44 +33,5 @@ data Process
 
 -- | AST for statements
 data Statement
-  = Assignment Text Process
-  | IfThenElse Text Statement Statement
-  deriving (Eq, Show)
-
--- | AST for arithmetic expressions
-data AExpr
-  = AVal Int
-  | AVar Text
-  | Sum AExpr AExpr
-  | Min AExpr AExpr
-  | Mul AExpr AExpr
-  deriving (Eq, Show)
-
--- | AST for Boolean expressions
-data BExpr
-  = BVal Bool
-  | Eq AExpr AExpr
-  | Leq AExpr AExpr
-  | Not BExpr
-  | And BExpr BExpr
-  | Or BExpr BExpr
-  deriving (Eq, Show)
-
--- | AST for tokens, used by the parser
-data Token
-  = TArith AExpr
-  | TBool BExpr
-  | TProc Text
-  | TActIn Text
-  | TActOut Text
-  | TActTau
-  | RelFn RelabellingFunction
-  | ResSet (Set Label)
-  | TPre Token Token
-  | TChoice Token Token
-  | TPar Token Token
-  | TRes Token Token
-  | TRel Token Token
-  | TAss Token Token
-  | TBranch Token Token Token
+  = Assignment Process Process
   deriving (Eq, Show)

@@ -1,7 +1,7 @@
-module CCS.StatementParser where
+module CCS_VP.StatementParser where
 
-import CCS.Grammars (Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..), Token (..))
-import CCS.Lexer (tokenize)
+import CCS_VP.Grammars (Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..), Token (..))
+import CCS_VP.Lexer (tokenize)
 import Data.Set (Set)
 import Data.Text (Text)
 import Debug.Trace (trace)
@@ -27,14 +27,20 @@ tokenToStatement (TAss left right) = do
   lhs <- tokenToProcess left
   rhs <- tokenToProcess right
   case lhs of
-    ProcessName name -> return $ Assignment name rhs
+    ProcessName name mvar -> return $ Assignment (ProcessName name mvar) rhs
     _ -> Left $ "Expected a process name on the left-hand side of the assignment, got: " ++ show rhs
 tokenToStatement token = Left $ "Expecting a statement, got: " ++ show token
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
-tokenToAction (TActIn name) = Right $ ActionName $ Input name
-tokenToAction (TActOut name) = Right $ ActionName $ Output name
+tokenToAction (TActIn name) = Right $ ActionName (Input name) Nothing
+tokenToAction (TActInV name var) = case var of
+  TArith v -> Right $ ActionName (Input name) (Just v)
+  other -> Left $ "Expected an arithmetic expression, got: " ++ show other
+tokenToAction (TActOut name) = Right $ ActionName (Output name) Nothing
+tokenToAction (TActOutV name var) = case var of
+  TArith v -> Right $ ActionName (Output name) (Just v)
+  other -> Left $ "Expected an arithmetic expression, got: " ++ show other
 tokenToAction TActTau = Right Tau
 tokenToAction other = Left $ "Expecting action, got something else: " ++ show other
 
@@ -52,7 +58,10 @@ tokenToLabelSet token = case token of
 
 -- | Attempts to convert a given into into a process
 tokenToProcess :: Token -> Either String Process
-tokenToProcess (TProc name) = Right $ ProcessName name
+tokenToProcess (TProc name) = Right $ ProcessName name Nothing
+tokenToProcess (TProcV name var) = case var of
+  TArith v -> Right $ ProcessName name (Just v)
+  other -> Left $ "Expected an arithmetic expression, got: " ++ show other
 tokenToProcess (TPre left right) = do
   action <- tokenToAction left
   process <- tokenToProcess right
@@ -73,4 +82,10 @@ tokenToProcess (TRes left right) = do
   process <- tokenToProcess left
   labelSet <- tokenToLabelSet right
   return $ Restriction process labelSet
+tokenToProcess (TBranch t1 t2 t3) = case t1 of
+  TBool guard -> do
+    b1 <- tokenToProcess t2
+    b2 <- tokenToProcess t3
+    return $ IfThenElse guard b1 b2
+  other -> Left $ "Expected a boolean expression, got: " ++ show other
 tokenToProcess token = Left $ "Expected a process, got: " ++ show token
