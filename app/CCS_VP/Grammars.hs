@@ -49,7 +49,15 @@ data AExpr
   | Sum AExpr AExpr
   | Min AExpr AExpr
   | Mul AExpr AExpr
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show AExpr where
+  show :: AExpr -> String
+  show (AVal val) = show val
+  show (AVar var) = show var
+  show (Sum e1 e2) = show e1 ++ " + " ++ show e2
+  show (Min e1 e2) = show e1 ++ " - " ++ show e2
+  show (Mul e1 e2) = show e1 ++ " * " ++ show e2
 
 -- | AST for Boolean expressions
 data BExpr
@@ -59,7 +67,17 @@ data BExpr
   | Not BExpr
   | And BExpr BExpr
   | Or BExpr BExpr
-  deriving (Eq, Show)
+  deriving (Eq)
+
+instance Show BExpr where
+  show :: BExpr -> String
+  show (BVal val) = show val
+  show (Eq e1 e2) = show e1 ++ " == " ++ show e2
+  show (Leq e1 e2) = show e1 ++ " <= " ++ show e2
+  show (Not (BVal b)) = "¬" ++ show b
+  show (Not e) = "¬" ++ "(" ++ show e ++ ")"
+  show (And e1 e2) = show e1 ++ "∧" ++ show e2
+  show (Or e1 e2) = show e1 ++ "∨" ++ show e2
 
 -- | AST for tokens, used by the parser
 data Token

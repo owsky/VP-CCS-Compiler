@@ -68,6 +68,7 @@ executable ccs-value-passing-compiler
     CCS.Grammars
     CCS_VP.AExprParser
     CCS_VP.BExprParser
+    CCS_VP.Eval
     CCS_VP.Grammars
     CCS_VP.Lexer
     CCS_VP.StatementParser
