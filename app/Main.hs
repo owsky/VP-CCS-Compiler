@@ -41,6 +41,5 @@ processLine line = do
 
 main :: IO ()
 main = do
-  let input :: Text = pack "P = a(x).b(x).P"
-  let s = processLine input
-  print $ statementFromVP s
+  let input :: Text = pack "P = in(x).in(y).P"
+  print $ statementFromVP $ processLine input

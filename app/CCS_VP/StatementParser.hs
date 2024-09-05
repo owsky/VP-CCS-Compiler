@@ -33,13 +33,13 @@ tokenToStatement token = Left $ "Expecting a statement, got: " ++ show token
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
-tokenToAction (TActIn name) = Right $ ActionName (Input name) Nothing
+tokenToAction (TActIn name) = Right $ ActionName (Input name) []
 tokenToAction (TActInV name var) = case var of
-  TArith v -> Right $ ActionName (Input name) (Just v)
+  TArith v -> Right $ ActionName (Input name) v
   other -> Left $ "Expected an arithmetic expression, got: " ++ show other
-tokenToAction (TActOut name) = Right $ ActionName (Output name) Nothing
+tokenToAction (TActOut name) = Right $ ActionName (Output name) []
 tokenToAction (TActOutV name var) = case var of
-  TArith v -> Right $ ActionName (Output name) (Just v)
+  TArith v -> Right $ ActionName (Output name) v
   other -> Left $ "Expected an arithmetic expression, got: " ++ show other
 tokenToAction TActTau = Right Tau
 tokenToAction other = Left $ "Expecting action, got something else: " ++ show other
@@ -58,9 +58,9 @@ tokenToLabelSet token = case token of
 
 -- | Attempts to convert a given into into a process
 tokenToProcess :: Token -> Either String Process
-tokenToProcess (TProc name) = Right $ ProcessName name Nothing
+tokenToProcess (TProc name) = Right $ ProcessName name []
 tokenToProcess (TProcV name var) = case var of
-  TArith v -> Right $ ProcessName name (Just v)
+  TArith v -> Right $ ProcessName name v
   other -> Left $ "Expected an arithmetic expression, got: " ++ show other
 tokenToProcess (TPre left right) = do
   action <- tokenToAction left

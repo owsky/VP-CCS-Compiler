@@ -48,7 +48,9 @@ instance Show Process where
     (Choice p1 p2) -> show act ++ "." ++ "(" ++ show (Choice p1 p2) ++ ")"
     (Parallel p1 p2) -> show act ++ "." ++ "(" ++ show (Parallel p1 p2) ++ ")"
     _ -> show act ++ "." ++ show proc
-  show (Choice p1 p2) = show p1 ++ " + " ++ show p2
+  show (Choice p1 p2) = case p2 of
+    (ProcessName "0") -> show p1
+    _ -> show p1 ++ " + " ++ show p2
   show (Parallel p1 p2) = show p1 ++ " | " ++ show p2
   show (Relabelling p fn) = show p ++ show fn
   show (Restriction p s) = show p ++ show s

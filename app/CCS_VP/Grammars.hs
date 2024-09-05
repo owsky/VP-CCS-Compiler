@@ -16,7 +16,7 @@ getLabelName (Output str) = str
 
 -- | AST for actions, i.e., transitions over channel names or internal
 data Action
-  = ActionName Label (Maybe AExpr)
+  = ActionName Label [AExpr]
   | Tau
   deriving (Eq, Show)
 
@@ -28,7 +28,7 @@ newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving 
 
 -- | AST for processes, i.e., process literals or process operators
 data Process
-  = ProcessName Text (Maybe AExpr)
+  = ProcessName Text [AExpr]
   | ActionPrefix Action Process
   | Choice Process Process
   | Parallel Process Process
@@ -81,7 +81,7 @@ instance Show BExpr where
 
 -- | AST for tokens, used by the parser
 data Token
-  = TArith AExpr
+  = TArith [AExpr]
   | TBool BExpr
   | TProc Text
   | TProcV Text Token

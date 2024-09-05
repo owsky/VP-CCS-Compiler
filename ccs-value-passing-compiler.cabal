@@ -66,6 +66,7 @@ executable ccs-value-passing-compiler
   other-modules:
     CCS.From_VP
     CCS.Grammars
+    CCS.Substitute
     CCS_VP.AExprParser
     CCS_VP.BExprParser
     CCS_VP.Eval

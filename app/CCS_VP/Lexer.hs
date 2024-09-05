@@ -26,11 +26,11 @@ tryPToken = do
       eof $> Nothing
     ]
 
-pTArith :: Parser Token
-pTArith = TArith <$> pAExpr
+-- pTArith :: Parser Token
+-- pTArith = TArith <$> pAExpr
 
-pTBool :: Parser Token
-pTBool = TBool <$> pBExpr
+-- pTBool :: Parser Token
+-- pTBool = TBool <$> pBExpr
 
 -- | Token parser
 pToken :: Parser Token
@@ -59,7 +59,7 @@ pTProc = try (TProc . pack <$> lexeme (choice [(:) <$> upperChar <*> many letter
 pTProcV :: Parser Token
 pTProcV = try $ do
   pName <- (:) <$> upperChar <*> many letterChar
-  v <- roundParens pAExpr
+  v <- roundParens (pAExpr `sepBy1` comma)
   return $ TProcV (pack pName) (TArith v)
 
 -- | Polymorphic parser for input actions
@@ -69,7 +69,7 @@ pActIn constr = constr . pack <$> lexeme ((:) <$> lowerChar <*> many letterChar)
 pActInV :: Parser Token
 pActInV = try $ do
   aName <- (:) <$> lowerChar <*> many letterChar
-  v <- roundParens pAExpr
+  v <- roundParens (pAExpr `sepBy1` comma)
   return $ TActInV (pack aName) (TArith v)
 
 -- | Polymorphic parser for output actions
@@ -83,7 +83,7 @@ pActOutV :: Parser Token
 pActOutV = do
   _ <- char '\''
   aName <- (:) <$> lowerChar <*> many letterChar
-  v <- roundParens pAExpr
+  v <- roundParens (pAExpr `sepBy1` comma)
   return $ TActOutV (pack $ "'" ++ aName) (TArith v)
 
 -- | Parser for implicit actions
