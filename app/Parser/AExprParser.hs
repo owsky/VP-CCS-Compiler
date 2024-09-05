@@ -1,10 +1,10 @@
-module CCS_VP.AExprParser where
+module Parser.AExprParser where
 
-import CCS_VP.Grammars (AExpr (..))
-import CCS_VP.Utils (Parser, binaryL, decimal, lexeme, roundParens, sc)
+import AST (AExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Text (Text, pack)
 import Data.Void (Void)
+import Parser.Utils (Parser, binaryL, decimal, lexeme, roundParens, sc)
 import Text.Megaparsec (MonadParsec (eof), ParseErrorBundle, choice, parse, some, (<?>))
 import Text.Megaparsec.Char (letterChar)
 

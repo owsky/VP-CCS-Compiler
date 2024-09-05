@@ -1,4 +1,4 @@
-module CCS.Grammars where
+module Translator.Grammars where
 
 import Data.Set (Set)
 import Data.Text (Text, unpack)

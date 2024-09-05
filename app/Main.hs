@@ -26,11 +26,11 @@ module Main (main) where
 --   let outputLines = map show processedLines
 --   writeFile outputFilePath (unlines outputLines)
 
-import CCS.From_VP (statementFromVP)
-import CCS_VP.Grammars (Statement (..))
-import CCS_VP.StatementParser (parseInput)
+import AST (Statement (..))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack)
+import Parser.StatementParser (parseInput)
+import Translator.From_VP (statementFromVP)
 
 processLine :: Text -> Statement
 processLine line = do
@@ -41,5 +41,5 @@ processLine line = do
 
 main :: IO ()
 main = do
-  let input :: Text = pack "P = in(x).in(y).P"
+  let input :: Text = pack "P = in(x).out(x).P"
   print $ statementFromVP $ processLine input

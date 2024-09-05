@@ -1,10 +1,11 @@
-module CCS_VP.StatementParser where
+module Parser.StatementParser (parseInput) where
 
-import CCS_VP.Grammars (Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..), Token (..))
-import CCS_VP.Lexer (tokenize)
+import AST (Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..))
 import Data.Set (Set)
 import Data.Text (Text)
 import Debug.Trace (trace)
+import Parser.AST (Token (..))
+import Parser.Lexer (tokenize)
 import Text.Megaparsec (errorBundlePretty)
 
 -- | Attempts to parse the given text into a statement

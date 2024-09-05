@@ -1,6 +1,6 @@
-module CCS.Substitute (substitute) where
+module Translator.Substitute (substitute) where
 
-import CCS_VP.Grammars (AExpr (..), Action (..), Process (..))
+import AST (AExpr (..), Action (..), Process (..))
 import Data.Text (Text)
 
 concrete :: Text -> Int -> AExpr -> AExpr

@@ -1,15 +1,16 @@
-module CCS_VP.Lexer where
+module Parser.Lexer where
 
-import CCS_VP.AExprParser (pAExpr)
-import CCS_VP.BExprParser (pBExpr)
-import CCS_VP.Grammars (Label (..), RelabellingFunction (..), RelabellingMapping (..), Token (..), getLabelName)
-import CCS_VP.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol, textUntil)
+import AST (Label (..), RelabellingFunction (..), RelabellingMapping (..), getLabelName)
 import Control.Monad (void)
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Functor (($>))
 import Data.Set (fromList)
 import Data.Text (Text, pack)
 import Data.Void (Void)
+import Parser.AExprParser (pAExpr)
+import Parser.AST (Token (..))
+import Parser.BExprParser (pBExpr)
+import Parser.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol, textUntil)
 import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, label, many, parse, sepBy1, (<?>))
 import Text.Megaparsec.Char (char, letterChar, lowerChar, string, upperChar)
 import Text.Megaparsec.Error (errorBundlePretty)
@@ -25,12 +26,6 @@ tryPToken = do
     [ Just <$> try pToken,
       eof $> Nothing
     ]
-
--- pTArith :: Parser Token
--- pTArith = TArith <$> pAExpr
-
--- pTBool :: Parser Token
--- pTBool = TBool <$> pBExpr
 
 -- | Token parser
 pToken :: Parser Token

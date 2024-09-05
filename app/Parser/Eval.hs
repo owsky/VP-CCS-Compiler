@@ -1,6 +1,6 @@
-module CCS_VP.Eval where
+module Parser.Eval where
 
-import CCS_VP.Grammars (AExpr (..), BExpr (..))
+import AST (AExpr (..), BExpr (..))
 
 evalArit :: AExpr -> Int
 evalArit (AVal val) = val

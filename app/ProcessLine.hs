@@ -1,8 +1,8 @@
 module ProcessLine where
 
-import CCS.From_VP (statementFromVP)
-import CCS_VP.StatementParser (parseInput)
 import Data.Text (Text, pack)
+import Parser.StatementParser (parseInput)
+import Translator.From_VP (statementFromVP)
 
 processLine :: Text -> Either String (Maybe Text)
 processLine line = do
