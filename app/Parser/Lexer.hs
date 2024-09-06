@@ -55,7 +55,7 @@ pTProcV :: Parser Token
 pTProcV = try $ do
   pName <- (:) <$> upperChar <*> many letterChar
   v <- roundParens (pAExpr `sepBy1` comma)
-  return $ TProcV (pack pName) (TArith v)
+  return $ TProcV (pack pName) v
 
 -- | Polymorphic parser for input actions
 pActIn :: forall a. (Text -> a) -> Parser a
@@ -64,8 +64,7 @@ pActIn constr = constr . pack <$> lexeme ((:) <$> lowerChar <*> many letterChar)
 pActInV :: Parser Token
 pActInV = try $ do
   aName <- (:) <$> lowerChar <*> many letterChar
-  v <- roundParens (pAExpr `sepBy1` comma)
-  return $ TActInV (pack aName) (TArith v)
+  TActInV (pack aName) <$> pAExpr
 
 -- | Polymorphic parser for output actions
 pActOut :: forall a. (Text -> a) -> Parser a
@@ -78,8 +77,7 @@ pActOutV :: Parser Token
 pActOutV = do
   _ <- char '\''
   aName <- (:) <$> lowerChar <*> many letterChar
-  v <- roundParens (pAExpr `sepBy1` comma)
-  return $ TActOutV (pack $ "'" ++ aName) (TArith v)
+  TActOutV (pack $ "'" ++ aName) <$> pAExpr
 
 -- | Parser for implicit actions
 pTActTau :: Parser Token
@@ -127,6 +125,6 @@ pTBranch = do
 
   case (bexp, thenBranch) of
     (Right bexpToken, Right thenBranchToken) ->
-      return $ TBranch (TBool bexpToken) thenBranchToken elseBranch
+      return $ TBranch bexpToken thenBranchToken elseBranch
     (Left err, _) -> fail $ errorBundlePretty err
     (_, Left err) -> fail $ errorBundlePretty err

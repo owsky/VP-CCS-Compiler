@@ -34,14 +34,10 @@ tokenToStatement token = Left $ "Expecting a statement, got: " ++ show token
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
-tokenToAction (TActIn name) = Right $ ActionName (Input name) []
-tokenToAction (TActInV name var) = case var of
-  TArith v -> Right $ ActionName (Input name) v
-  other -> Left $ "Expected an arithmetic expression, got: " ++ show other
-tokenToAction (TActOut name) = Right $ ActionName (Output name) []
-tokenToAction (TActOutV name var) = case var of
-  TArith v -> Right $ ActionName (Output name) v
-  other -> Left $ "Expected an arithmetic expression, got: " ++ show other
+tokenToAction (TActIn name) = Right $ ActionName (Input name) Nothing
+tokenToAction (TActInV name expr) = Right $ ActionName (Input name) (Just expr)
+tokenToAction (TActOut name) = Right $ ActionName (Output name) Nothing
+tokenToAction (TActOutV name expr) = Right $ ActionName (Output name) (Just expr)
 tokenToAction TActTau = Right Tau
 tokenToAction other = Left $ "Expecting action, got something else: " ++ show other
 
@@ -60,33 +56,11 @@ tokenToLabelSet token = case token of
 -- | Attempts to convert a given into into a process
 tokenToProcess :: Token -> Either String Process
 tokenToProcess (TProc name) = Right $ ProcessName name []
-tokenToProcess (TProcV name var) = case var of
-  TArith v -> Right $ ProcessName name v
-  other -> Left $ "Expected an arithmetic expression, got: " ++ show other
-tokenToProcess (TPre left right) = do
-  action <- tokenToAction left
-  process <- tokenToProcess right
-  return $ ActionPrefix action process
-tokenToProcess (TChoice left right) = do
-  p1 <- tokenToProcess left
-  p2 <- tokenToProcess right
-  return $ Choice p1 p2
-tokenToProcess (TPar left right) = do
-  p1 <- tokenToProcess left
-  p2 <- tokenToProcess right
-  return $ Parallel p1 p2
-tokenToProcess (TRel left right) = do
-  process <- tokenToProcess left
-  relabelFn <- tokenToRelabelFn right
-  return $ Relabelling process relabelFn
-tokenToProcess (TRes left right) = do
-  process <- tokenToProcess left
-  labelSet <- tokenToLabelSet right
-  return $ Restriction process labelSet
-tokenToProcess (TBranch t1 t2 t3) = case t1 of
-  TBool guard -> do
-    b1 <- tokenToProcess t2
-    b2 <- tokenToProcess t3
-    return $ IfThenElse guard b1 b2
-  other -> Left $ "Expected a boolean expression, got: " ++ show other
+tokenToProcess (TProcV name exprs) = Right $ ProcessName name exprs
+tokenToProcess (TPre left right) = ActionPrefix <$> tokenToAction left <*> tokenToProcess right
+tokenToProcess (TChoice left right) = Choice <$> tokenToProcess left <*> tokenToProcess right
+tokenToProcess (TPar left right) = Parallel <$> tokenToProcess left <*> tokenToProcess right
+tokenToProcess (TRel left right) = Relabelling <$> tokenToProcess left <*> tokenToRelabelFn right
+tokenToProcess (TRes left right) = Restriction <$> tokenToProcess left <*> tokenToLabelSet right
+tokenToProcess (TBranch guard t1 t2) = IfThenElse guard <$> tokenToProcess t1 <*> tokenToProcess t2
 tokenToProcess token = Left $ "Expected a process, got: " ++ show token

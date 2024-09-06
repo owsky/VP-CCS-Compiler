@@ -1,10 +1,10 @@
-module Parser.Eval where
+module Eval where
 
 import AST (AExpr (..), BExpr (..))
 
 evalArit :: AExpr -> Int
 evalArit (AVal val) = val
-evalArit (AVar _) = undefined
+evalArit (AVar var) = error $ "Can't evaluate arithmetic expressions with variable: " ++ show var
 evalArit (Sum e1 e2) = evalArit e1 + evalArit e2
 evalArit (Min e1 e2) = evalArit e1 - evalArit e2
 evalArit (Mul e1 e2) = evalArit e1 * evalArit e2

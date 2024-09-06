@@ -21,14 +21,14 @@ getLabelName (Output str) = str
 
 -- | AST for actions, i.e., transitions over channel names or internal
 data Action
-  = ActionName Label [AExpr]
+  = ActionName Label (Maybe AExpr)
   | Tau
   deriving (Eq)
 
 instance Show Action where
   show :: Action -> String
-  show (ActionName label []) = show label
-  show (ActionName label vars) = show label ++ "(" ++ showVars vars ++ ")"
+  show (ActionName label Nothing) = show label
+  show (ActionName label (Just expr)) = show label ++ "(" ++ show expr ++ ")"
   show Tau = "τ"
 
 -- | AST for relabellings, e.g., a/b

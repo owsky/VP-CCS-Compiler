@@ -5,15 +5,14 @@ import Data.Set (Set)
 import Data.Text (Text)
 
 -- | AST for tokens, used by the parser
+-- TODO merge V cases, optimize action in/out parsing
 data Token
-  = TArith [AExpr]
-  | TBool BExpr
-  | TProc Text
-  | TProcV Text Token
+  = TProc Text
+  | TProcV Text [AExpr]
   | TActIn Text
-  | TActInV Text Token
+  | TActInV Text AExpr
   | TActOut Text
-  | TActOutV Text Token
+  | TActOutV Text AExpr
   | TActTau
   | RelFn RelabellingFunction
   | ResSet (Set Label)
@@ -23,5 +22,5 @@ data Token
   | TRes Token Token
   | TRel Token Token
   | TAss Token Token
-  | TBranch Token Token Token
+  | TBranch BExpr Token Token
   deriving (Eq, Show)

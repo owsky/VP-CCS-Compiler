@@ -4,7 +4,7 @@ import AST (AExpr (..), Action (..), Process (..))
 import Data.Text (Text)
 
 concrete :: Text -> Int -> AExpr -> AExpr
-concrete var val (AVar name) = if var == name then AVal val else AVar var
+concrete var val (AVar name) = if var == name then AVal val else AVar name
 concrete _ _ (AVal value) = AVal value
 concrete _ _ _ = undefined
 
@@ -14,7 +14,8 @@ substitute :: Text -> Int -> Process -> Process
 substitute var val proc = case proc of
   (ProcessName name []) -> ProcessName name []
   (ProcessName name vars) -> ProcessName name $ map conc vars
-  (ActionPrefix (ActionName label vars) p) -> ActionPrefix (ActionName label $ map conc vars) $ sub p
+  (ActionPrefix (ActionName label Nothing) p) -> ActionPrefix (ActionName label Nothing) (sub p)
+  (ActionPrefix (ActionName label (Just expr)) p) -> ActionPrefix (ActionName label (Just $ conc expr)) (sub p)
   (ActionPrefix Tau p) -> ActionPrefix Tau $ sub p
   (Choice p1 p2) -> Choice (sub p1) (sub p2)
   (Parallel p1 p2) -> Parallel (sub p1) (sub p2)

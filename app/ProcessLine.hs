@@ -2,7 +2,7 @@ module ProcessLine where
 
 import Data.Text (Text, pack)
 import Parser.StatementParser (parseInput)
-import Translator.From_VP (statementFromVP)
+import Translator.FromVP (statementFromVP)
 
 processLine :: Text -> Either String (Maybe Text)
 processLine line = do
