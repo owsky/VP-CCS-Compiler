@@ -24,7 +24,7 @@ processLines inputLines = do
   let output = map statementFromVP statements
   return $ map show output
 
-checkError :: forall a. Either String a -> a
+checkError :: (Show a) => Either String a -> a
 checkError eVal = case eVal of
   Left err -> error err
   Right val -> val

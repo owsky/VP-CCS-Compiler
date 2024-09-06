@@ -72,7 +72,6 @@ executable ccs-value-passing-compiler
     Parser.Lexer
     Parser.StatementParser
     Parser.Utils
-    ProcessLine
     Translator.FromVP
     Translator.Substitute
 

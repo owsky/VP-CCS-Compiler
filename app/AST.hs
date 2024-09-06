@@ -1,5 +1,6 @@
 module AST where
 
+import Data.List (intercalate)
 import Data.Set (Set)
 import Data.Text (Text, unpack)
 
@@ -115,4 +116,4 @@ binaryShow :: (Show a) => a -> String -> a -> String
 binaryShow e1 op e2 = show e1 ++ " " ++ op ++ " " ++ show e2
 
 showVars :: [AExpr] -> String
-showVars = foldr (\var acc -> acc ++ ", " ++ show var) ""
+showVars vars = intercalate ", " (map show vars)
