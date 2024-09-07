@@ -1,7 +1,7 @@
 module AST where
 
-import Data.List (intercalate)
-import Data.Set (Set)
+import Data.List (intercalate, sort)
+import Data.Set (Set, toList)
 import Data.Text (Text, unpack)
 
 -- | AST for labels, i.e., channel names and their complements
@@ -33,10 +33,18 @@ instance Show Action where
   show Tau = "τ"
 
 -- | AST for relabellings, e.g., a/b
-data RelabellingMapping = RelabellingMapping Text Text deriving (Show, Eq)
+data RelabellingMapping = RelabellingMapping Text Text deriving (Eq)
+
+instance Show RelabellingMapping where
+  show :: RelabellingMapping -> String
+  show (RelabellingMapping from to) = unpack from ++ "/" ++ unpack to
 
 -- | AST for relabelling functions, e.g., [a/b, c/d]
-newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving (Show, Eq)
+newtype RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving (Eq)
+
+instance Show RelabellingFunction where
+  show :: RelabellingFunction -> String
+  show (RelabellingFunction f) = "[" ++ intercalate ", " (map show f) ++ "]"
 
 -- | AST for processes, i.e., process literals or process operators
 data Process
@@ -45,7 +53,7 @@ data Process
   | Choice Process Process
   | Parallel Process Process
   | Relabelling Process RelabellingFunction
-  | Restriction Process (Set Label)
+  | Restriction Process (Set Text)
   | IfThenElse BExpr Process Process
   deriving (Eq)
 
@@ -63,7 +71,7 @@ instance Show Process where
     _ -> show p1 ++ " + " ++ show p2
   show (Parallel p1 p2) = show p1 ++ " | " ++ show p2
   show (Relabelling p fn) = show p ++ show fn
-  show (Restriction p s) = show p ++ show s
+  show (Restriction p s) = show p ++ " \\ {" ++ intercalate ", " (map unpack (sort (toList s))) ++ "}"
   show (IfThenElse guard p1 p2) = "if " ++ show guard ++ " then " ++ show p1 ++ " else " ++ show p2
 
 -- | AST for statements

@@ -1,12 +1,22 @@
 module Translator.Substitute (substitute) where
 
-import AST (AExpr (..), Action (..), Process (..))
+import AST (AExpr (..), Action (..), BExpr (..), Process (..))
 import Data.Text (Text)
 
-concrete :: Text -> Int -> AExpr -> AExpr
-concrete var val (AVar name) = if var == name then AVal val else AVar name
-concrete _ _ (AVal value) = AVal value
-concrete _ _ _ = undefined
+concreteA :: Text -> Int -> AExpr -> AExpr
+concreteA var val (AVar name) = if var == name then AVal val else AVar name
+concreteA _ _ (AVal value) = AVal value
+concreteA var val (Sum e1 e2) = Sum (concreteA var val e1) (concreteA var val e2)
+concreteA var val (Min e1 e2) = Min (concreteA var val e1) (concreteA var val e2)
+concreteA var val (Mul e1 e2) = Mul (concreteA var val e1) (concreteA var val e2)
+
+concreteB :: Text -> Int -> BExpr -> BExpr
+concreteB _ _ (BVal b) = BVal b
+concreteB var val (Eq e1 e2) = Eq (concreteA var val e1) (concreteA var val e2)
+concreteB var val (Leq e1 e2) = Leq (concreteA var val e1) (concreteA var val e2)
+concreteB var val (Not e) = Not $ concreteB var val e
+concreteB var val (And e1 e2) = And (concreteB var val e1) (concreteB var val e2)
+concreteB var val (Or e1 e2) = Or (concreteB var val e1) (concreteB var val e2)
 
 -- | Given a variable name, a concrete value and a process, return a new process where each occurrence
 -- | of the variable has been substituted by the value
@@ -21,7 +31,7 @@ substitute var val proc = case proc of
   (Parallel p1 p2) -> Parallel (sub p1) (sub p2)
   (Relabelling p fn) -> Relabelling (sub p) fn
   (Restriction p set) -> Restriction (sub p) set
-  (IfThenElse guard p1 p2) -> IfThenElse guard (sub p1) (sub p2)
+  (IfThenElse guard p1 p2) -> IfThenElse (concreteB var val guard) (sub p1) (sub p2)
   where
     sub = substitute var val
-    conc = concrete var val
+    conc = concreteA var val

@@ -1,5 +1,6 @@
 module Main (main) where
 
+import AST (Statement)
 import Data.Maybe (mapMaybe)
 import Data.Text (Text, lines, pack)
 import Parser.StatementParser (parseInput)
@@ -21,10 +22,10 @@ processLines :: [Text] -> IO [String]
 processLines inputLines = do
   let parsed = map parseInput inputLines
   let statements = mapMaybe checkError parsed
-  let output = map statementFromVP statements
+  let output = concatMap statementFromVP statements
   return $ map show output
-
-checkError :: (Show a) => Either String a -> a
-checkError eVal = case eVal of
-  Left err -> error err
-  Right val -> val
+  where
+    checkError :: Either String (Maybe Statement) -> Maybe Statement
+    checkError eVal = case eVal of
+      Left err -> error err
+      Right val -> val

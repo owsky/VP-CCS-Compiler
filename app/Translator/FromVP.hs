@@ -1,15 +1,29 @@
 module Translator.FromVP (statementFromVP) where
 
-import AST (AExpr (..), Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..))
+import AST (AExpr (..), Action (..), Label (..), Process (..), RelabellingFunction (..), RelabellingMapping (..), Statement (..))
 import Data.List (intercalate)
-import Data.Set (Set)
+import Data.Set (Set, fromList, toList)
 import Data.Text (Text, pack, unpack)
 import Eval (evalArit, evalBool)
 import Translator.Substitute (substitute)
 
 -- | Translates a VP-CCS Statement into a CCS Statement
-statementFromVP :: Statement -> Statement
-statementFromVP (Assignment p1 p2) = Assignment (processFromVP p1) (processFromVP p2)
+statementFromVP :: Statement -> [Statement]
+statementFromVP (Assignment p1 p2) = case p1 of
+  (ProcessName _ []) -> [Assignment (processFromVP p1) (processFromVP p2)]
+  (ProcessName procName ((AVar varName) : exprs)) -> do
+    -- for each variable, concretize it within the nat range and substitute into p2, create a list of procnames for p1 with the concretized variables
+    let m = aux 0 4 varName procName p2
+    let stmts = [Assignment (ProcessName newProcName exprs) rhs | (newProcName, rhs) <- m]
+    concatMap statementFromVP stmts
+  _ -> error "You can only assign to process names"
+  where
+    aux :: Int -> Int -> Text -> Text -> Process -> [(Text, Process)]
+    aux lowerBound higherBound _ _ _ | lowerBound > higherBound = []
+    aux lowerBound higherBound varName procName rhs = do
+      let newProcName = procName <> "_" <> pack (show lowerBound)
+      let newRhs = substitute varName lowerBound rhs
+      (newProcName, newRhs) : aux (lowerBound + 1) higherBound varName procName rhs
 
 processFromVP :: Process -> Process
 processFromVP (ProcessName name vars) = do
@@ -29,8 +43,8 @@ processFromVP (ActionPrefix (ActionName (Output name) (Just var)) proc) = do
 processFromVP (ActionPrefix Tau proc) = ActionPrefix Tau (processFromVP proc)
 processFromVP (Choice p1 p2) = Choice (processFromVP p1) (processFromVP p2)
 processFromVP (Parallel p1 p2) = Parallel (processFromVP p1) (processFromVP p2)
-processFromVP (Relabelling p f) = Relabelling (processFromVP p) (relabellingFunctionFromVP f)
-processFromVP (Restriction p s) = Restriction (processFromVP p) (restrictionSetFromVP s)
+processFromVP (Relabelling p f) = Relabelling (processFromVP p) (relabellingFunctionFromVP 0 4 f)
+processFromVP (Restriction p s) = Restriction (processFromVP p) (restrictionSetFromVP 0 4 s)
 processFromVP (IfThenElse guard p1 p2) = if evalBool guard then processFromVP p1 else processFromVP p2
 
 generateBoundedChoice :: Int -> Int -> Process -> Process
@@ -46,8 +60,21 @@ concatV :: (Show a) => [a] -> String -> Text
 concatV [] _ = ""
 concatV as c = pack $ c <> intercalate c (map show as)
 
-relabellingFunctionFromVP :: RelabellingFunction -> RelabellingFunction
-relabellingFunctionFromVP = undefined
+relabellingFunctionFromVP :: Int -> Int -> RelabellingFunction -> RelabellingFunction
+relabellingFunctionFromVP _ _ (RelabellingFunction []) = RelabellingFunction []
+relabellingFunctionFromVP lowerBound higherBound (RelabellingFunction (f : fs)) =
+  RelabellingFunction $ aux lowerBound higherBound f <> mappings
+  where
+    RelabellingFunction mappings = relabellingFunctionFromVP lowerBound higherBound (RelabellingFunction fs)
+    aux :: Int -> Int -> RelabellingMapping -> [RelabellingMapping]
+    aux l h _ | l > h = []
+    aux l h (RelabellingMapping from to) = do
+      let newFrom = pack $ unpack from ++ "_" ++ show l
+      let newTo = pack $ unpack to ++ "_" ++ show l
+      [RelabellingMapping newFrom newTo] <> aux (l + 1) h (RelabellingMapping from to)
 
-restrictionSetFromVP :: Set Label -> Set Label
-restrictionSetFromVP = undefined
+restrictionSetFromVP :: Int -> Int -> Set Text -> Set Text
+restrictionSetFromVP lowerBound higherBound labels = fromList . map pack . concatMap (generateConcreteNames lowerBound higherBound) $ toList labels
+
+generateConcreteNames :: Int -> Int -> Text -> [String]
+generateConcreteNames lowerBound higherBound a = [unpack a ++ "_" ++ show i | i <- [lowerBound .. higherBound]]

@@ -109,7 +109,7 @@ pRelFn = label "Relabelling function, e.g., [a/b, c/d]" $ do
 pResSet :: Parser Token
 pResSet = label "Restriction set, e.g., {a,b,c}" $ do
   labels <- curlyParens $ pLabel `sepBy1` comma
-  return $ ResSet (fromList labels)
+  return $ ResSet (fromList $ map getLabelName labels)
 
 -- | Parser for branching
 pTBranch :: Parser Token

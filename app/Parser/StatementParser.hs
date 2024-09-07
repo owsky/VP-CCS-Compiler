@@ -48,7 +48,7 @@ tokenToRelabelFn token = case token of
   _ -> Left "Error while parsing the relabeling function"
 
 -- | Attempts to convert a given into into a label set for restriction
-tokenToLabelSet :: Token -> Either String (Set Label)
+tokenToLabelSet :: Token -> Either String (Set Text)
 tokenToLabelSet token = case token of
   ResSet s -> Right s
   _ -> Left "Error while parsing the restriction set"

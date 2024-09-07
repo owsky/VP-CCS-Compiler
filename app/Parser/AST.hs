@@ -1,6 +1,6 @@
 module Parser.AST (Token (..)) where
 
-import AST (AExpr, BExpr, Label, RelabellingFunction)
+import AST (AExpr, BExpr, RelabellingFunction)
 import Data.Set (Set)
 import Data.Text (Text)
 
@@ -15,7 +15,7 @@ data Token
   | TActOutV Text AExpr
   | TActTau
   | RelFn RelabellingFunction
-  | ResSet (Set Label)
+  | ResSet (Set Text)
   | TPre Token Token
   | TChoice Token Token
   | TPar Token Token
