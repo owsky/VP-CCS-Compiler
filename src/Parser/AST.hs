@@ -5,14 +5,10 @@ import Data.Set (Set)
 import Data.Text (Text)
 
 -- | AST for tokens, used by the parser
--- TODO merge V cases, optimize action in/out parsing
 data Token
-  = TProc Text
-  | TProcV Text [AExpr]
-  | TActIn Text
-  | TActInV Text AExpr
-  | TActOut Text
-  | TActOutV Text AExpr
+  = TProc Text [AExpr]
+  | TActIn Text (Maybe AExpr)
+  | TActOut Text (Maybe AExpr)
   | TActTau
   | RelFn RelabellingFunction
   | ResSet (Set Text)

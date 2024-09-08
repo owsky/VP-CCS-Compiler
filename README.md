@@ -1,1 +1,1 @@
-# ccs_value_passing_compiler
+# VP-CCS-Compiler

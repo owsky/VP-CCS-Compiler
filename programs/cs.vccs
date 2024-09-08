@@ -1,0 +1,12 @@
+# Pred = in(x).in(y).Pred(x,y)
+# Pred(x) = if x == 0 then 'out(0).Pred else 'out(x - 1).Pred
+
+# A = in(x).inn(y).A(x,y)
+# A(x,y) = if x == y then 'out(x).B else 'out(x + y).C
+
+# P = in(x).in(y).P(x,y)
+# P = in(x).Q[in/asd]
+# P = A \ {a,b,c}
+
+A = if 1 == 0 then P else Q
+B = iff.C

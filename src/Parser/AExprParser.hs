@@ -2,14 +2,10 @@ module Parser.AExprParser where
 
 import AST (AExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
-import Data.Text (Text, pack)
-import Data.Void (Void)
-import Parser.Utils (Parser, binaryL, decimal, lexeme, roundParens, sc)
-import Text.Megaparsec (MonadParsec (eof), ParseErrorBundle, choice, parse, some, (<?>))
+import Data.Text (pack)
+import Parser.Utils (Parser, binaryL, decimal, lexeme, roundParens)
+import Text.Megaparsec (choice, some, (<?>))
 import Text.Megaparsec.Char (letterChar)
-
-parseArithmeticExpression :: Text -> Either (ParseErrorBundle Text Void) AExpr
-parseArithmeticExpression = parse (sc *> pAExpr <* eof) ""
 
 pAExpr :: Parser AExpr
 pAExpr = makeExprParser pTerm operatorTable

@@ -34,10 +34,8 @@ tokenToStatement token = Left $ "Expecting a statement, got: " ++ show token
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
-tokenToAction (TActIn name) = Right $ ActionName (Input name) Nothing
-tokenToAction (TActInV name expr) = Right $ ActionName (Input name) (Just expr)
-tokenToAction (TActOut name) = Right $ ActionName (Output name) Nothing
-tokenToAction (TActOutV name expr) = Right $ ActionName (Output name) (Just expr)
+tokenToAction (TActIn name expr) = Right $ ActionName (Input name) expr
+tokenToAction (TActOut name expr) = Right $ ActionName (Output name) expr
 tokenToAction TActTau = Right Tau
 tokenToAction other = Left $ "Expecting action, got something else: " ++ show other
 
@@ -55,8 +53,7 @@ tokenToLabelSet token = case token of
 
 -- | Attempts to convert a given into into a process
 tokenToProcess :: Token -> Either String Process
-tokenToProcess (TProc name) = Right $ ProcessName name []
-tokenToProcess (TProcV name exprs) = Right $ ProcessName name exprs
+tokenToProcess (TProc name exprs) = Right $ ProcessName name exprs
 tokenToProcess (TPre left right) = ActionPrefix <$> tokenToAction left <*> tokenToProcess right
 tokenToProcess (TChoice left right) = Choice <$> tokenToProcess left <*> tokenToProcess right
 tokenToProcess (TPar left right) = Parallel <$> tokenToProcess left <*> tokenToProcess right

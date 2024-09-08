@@ -2,15 +2,10 @@ module Parser.BExprParser where
 
 import AST (BExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
-import Data.Text (Text)
-import Data.Void (Void)
 import Parser.AExprParser (pAExpr)
-import Parser.Utils (Parser, binaryL, lexeme, prefix, roundParens, sc, symbol)
-import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, parse, (<?>))
+import Parser.Utils (Parser, binaryL, lexeme, prefix, roundParens, symbol)
+import Text.Megaparsec (MonadParsec (try), choice, (<?>))
 import Text.Megaparsec.Char (string)
-
-parseBooleanExpression :: Text -> Either (ParseErrorBundle Text Void) BExpr
-parseBooleanExpression = parse (sc *> pBExpr <* eof) ""
 
 pBExpr :: Parser BExpr
 pBExpr = makeExprParser pTerm operatorTable

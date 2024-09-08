@@ -1,31 +1,22 @@
 module Parser.Lexer where
 
-import AST (Label (..), RelabellingFunction (..), RelabellingMapping (..), getLabelName)
-import Control.Monad (void)
+import AST (BExpr, RelabellingFunction (..), RelabellingMapping (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Functor (($>))
 import Data.Set (fromList)
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
 import Parser.AExprParser (pAExpr)
 import Parser.AST (Token (..))
 import Parser.BExprParser (pBExpr)
-import Parser.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, roundParens, sc, slash, squareParens, symbol, textUntil)
-import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, label, many, parse, sepBy1, (<?>))
+import Parser.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, pWord, roundParens, sc, slash, squareParens, symbol, textUntil)
+import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, label, many, option, parse, sepBy1, (<?>))
 import Text.Megaparsec.Char (char, letterChar, lowerChar, string, upperChar)
 import Text.Megaparsec.Error (errorBundlePretty)
 
 -- | Tokenizes the given text
 tokenize :: Text -> Either (ParseErrorBundle Text Void) (Maybe Token)
-tokenize = parse tryPToken ""
-
-tryPToken :: Parser (Maybe Token)
-tryPToken = do
-  void sc
-  choice
-    [ Just <$> try pToken,
-      eof $> Nothing
-    ]
+tokenize = parse (sc *> choice [Just <$> pToken, eof $> Nothing]) ""
 
 -- | Token parser
 pToken :: Parser Token
@@ -33,7 +24,7 @@ pToken = makeExprParser pTerm operatorTable
 
 -- | Terms parses for makeExprParser
 pTerm :: Parser Token
-pTerm = choice [roundParens pToken, pTBranch, pRelFn, pResSet, pTActTau, pActOutV, pActOut TActOut, pActInV, pActIn TActIn, pTProcV, pTProc]
+pTerm = choice [roundParens pToken, pTActTau, pTBranch, pRelFn, pResSet, pActOut, pActIn, pTProc]
 
 -- | Operator table for makeExprParser
 operatorTable :: [[Operator Parser Token]]
@@ -49,82 +40,83 @@ operatorTable =
 
 -- | Parser for process names
 pTProc :: Parser Token
-pTProc = try (TProc . pack <$> lexeme (choice [(:) <$> upperChar <*> many letterChar, pure <$> char '0'])) <?> "Process name"
+pTProc = do
+  name <- pProcName <?> "Process Name"
+  vars <- option [] (try $ roundParens (pAExpr `sepBy1` comma)) <?> "Process variables"
+  if name == "0" && not (null vars)
+    then fail "Error: dead process cannot have variables"
+    else return $ TProc name vars
+  where
+    pProcName :: Parser Text
+    pProcName = lexeme (choice [(:) <$> upperChar <*> many letterChar, pure <$> char '0']) >>= checkReserved . pack
 
-pTProcV :: Parser Token
-pTProcV = try $ do
-  pName <- (:) <$> upperChar <*> many letterChar
-  v <- roundParens (pAExpr `sepBy1` comma)
-  return $ TProcV (pack pName) v
+-- | Parser for input actions
+pActIn :: Parser Token
+pActIn = do
+  name <- pChannel <?> "Input channel name"
+  var <- option Nothing (Just <$> roundParens (pAExpr)) <?> "Input action variable"
+  return $ TActIn name var
 
--- | Polymorphic parser for input actions
-pActIn :: forall a. (Text -> a) -> Parser a
-pActIn constr = constr . pack <$> lexeme ((:) <$> lowerChar <*> many letterChar) <?> "Input action name"
+-- | Parser for output actions
+pActOut :: Parser Token
+pActOut = do
+  _ <- char '\'' <?> "\' character, prefixes output channel names"
+  name <- pChannel <?> "Output channel name"
+  var <- option Nothing (Just <$> (roundParens (pAExpr))) <?> "Input action variable"
+  return $ TActOut name var
 
-pActInV :: Parser Token
-pActInV = try $ do
-  aName <- (:) <$> lowerChar <*> many letterChar
-  TActInV (pack aName) <$> pAExpr
+-- | Parser for channel names
+pChannel :: Parser Text
+pChannel = pack <$> ((:) <$> lowerChar <*> many letterChar) >>= checkReserved <?> "Channel name"
 
--- | Polymorphic parser for output actions
-pActOut :: forall a. (Text -> a) -> Parser a
-pActOut constr = label "Output action name" $ do
-  _ <- char '\''
-  aName <- (:) <$> lowerChar <*> many letterChar
-  return $ constr $ pack ("'" ++ aName)
-
-pActOutV :: Parser Token
-pActOutV = do
-  _ <- char '\''
-  aName <- (:) <$> lowerChar <*> many letterChar
-  TActOutV (pack $ "'" ++ aName) <$> pAExpr
-
--- | Parser for implicit actions
+-- | Parser for internal actions
 pTActTau :: Parser Token
-pTActTau = TActTau <$ symbol "τ" <?> "Implicit action"
-
--- | Parser for labels, i.e., used for named transitions
-pLabel :: Parser Label
-pLabel =
-  choice
-    [ pActIn Input,
-      pActOut Output
-    ]
-    <?> "Channel name"
+pTActTau = TActTau <$ symbol "τ" <?> "Internal action"
 
 -- | Parser for action relabelling functions
 pActionRelabel :: Parser RelabellingMapping
-pActionRelabel = label "Relabelling mapping, e.g., a/b" $ do
-  ogLabel <- pLabel
-  _ <- slash
-  RelabellingMapping (getLabelName ogLabel) . getLabelName <$> pLabel
+pActionRelabel = RelabellingMapping <$> (pChannel <* slash) <*> pChannel <?> "Relabelling mapping, e.g., a/b"
 
 -- | Parser for relabelling functions
 pRelFn :: Parser Token
-pRelFn = label "Relabelling function, e.g., [a/b, c/d]" $ do
-  mappings <- squareParens $ pActionRelabel `sepBy1` comma
-  return (RelFn $ RelabellingFunction mappings)
+pRelFn = RelFn . RelabellingFunction <$> (squareParens $ pActionRelabel `sepBy1` comma) <?> "Relabelling function, e.g., [a/b, c/d]"
 
 -- | Parser for channel restriction sets
 pResSet :: Parser Token
-pResSet = label "Restriction set, e.g., {a,b,c}" $ do
-  labels <- curlyParens $ pLabel `sepBy1` comma
-  return $ ResSet (fromList $ map getLabelName labels)
+pResSet = ResSet . fromList <$> (curlyParens $ pChannel `sepBy1` comma) <?> "Restriction set, e.g., {a,b,c}"
 
 -- | Parser for branching
 pTBranch :: Parser Token
 pTBranch = do
-  _ <- lexeme $ string "if"
-  bexpText <- textUntil (lexeme $ string "then")
-  thenBranchText <- textUntil (lexeme $ string "else")
-  elseBranch <- pToken
+  guard <- pGuard
+  p1 <- pThenBranch
+  p2 <- pToken <?> "Else branch process"
+  return $ TBranch guard p1 p2
+  where
+    pGuard :: Parser BExpr
+    pGuard = label "Branch guard" $ do
+      _ <- lexeme $ pWord "if"
+      guardText <- textUntil (lexeme $ string "then")
+      case parse pBExpr "" guardText of
+        Right guard -> return guard
+        Left err -> fail $ errorBundlePretty err
 
-  -- Parse the text segments using `pToken`
-  let bexp = parse pBExpr "" bexpText
-  let thenBranch = parse pToken "" thenBranchText
+    pThenBranch :: Parser Token
+    pThenBranch = label "Then branch process" $ do
+      thenBranchText <- textUntil (lexeme $ string "else")
+      case parse pToken "" thenBranchText of
+        Right token -> return token
+        Left err -> fail $ errorBundlePretty err
 
-  case (bexp, thenBranch) of
-    (Right bexpToken, Right thenBranchToken) ->
-      return $ TBranch bexpToken thenBranchToken elseBranch
-    (Left err, _) -> fail $ errorBundlePretty err
-    (_, Left err) -> fail $ errorBundlePretty err
+-- | List of reserved keywords
+reservedKeywords :: [Text]
+reservedKeywords = ["if", "then", "else"]
+
+-- | Checks whether the provided word is contained in the reserved keywords list.
+-- If it is, then it fails with an error message
+-- Otherwise it is wrapped in the Parser monad and returned
+checkReserved :: Text -> Parser Text
+checkReserved word =
+  if word `elem` reservedKeywords
+    then fail $ unpack word ++ " is a reserved keyword"
+    else return word

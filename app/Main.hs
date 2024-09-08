@@ -9,7 +9,7 @@ import Prelude hiding (lines, null)
 
 main :: IO ()
 main = do
-  let inputFilePath = "programs/cs.ccsv"
+  let inputFilePath = "programs/cs.vccs"
   let outputFilePath = "programs/cs.ccs"
 
   fileContents <- readFile inputFilePath
