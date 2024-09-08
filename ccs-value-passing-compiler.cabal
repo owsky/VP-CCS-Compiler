@@ -23,6 +23,8 @@ name:          ccs-value-passing-compiler
 --                  | | | +--- code changes with no API change
 version:       0.1.0.0
 
+cabal-version field
+
 -- A short (one-line) description of the package.
 -- synopsis:
 
@@ -55,15 +57,12 @@ build-type:    Simple
 common warnings
   ghc-options: -Wall
 
-executable ccs-value-passing-compiler
-  -- Import common warning flags.
-  import:             warnings
+common dependencies
+  base ^>= 4.20.0.0 && < 5.0
 
-  -- .hs or .lhs file containing the Main module.
-  main-is:            Main.hs
-
-  -- Modules included in this executable, other than Main.
-  other-modules:
+library
+  hs-source-dirs:     src
+  exposed-modules:
     AST
     Eval
     Parser.AExprParser
@@ -75,22 +74,59 @@ executable ccs-value-passing-compiler
     Translator.FromVP
     Translator.Substitute
 
+  build-depends:
+    , base
+    , containers          >=0.6.7   && <0.7
+    , filepath            >=1.5.3.0 && <2.0
+    , megaparsec          >=9.0     && <10.0
+    , parser-combinators  >=1.3.0   && <2.0
+    , pretty-simple       >=4.1.2.0 && <5.0
+    , text                >=2.0.2   && <3.0
+
+  default-language:   GHC2021
+  default-extensions: OverloadedStrings
+
+executable ccs-value-passing-compiler
+  -- Import common warning flags.
+  import:             warnings
+
+  -- .hs or .lhs file containing the Main module.
+  main-is:            Main.hs
+
+  -- Modules included in this executable, other than Main.
+  other-modules:
+
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
   build-depends:
-    , base                ^>=4.17.2.1
-    , containers          >=0.6.7     && <0.7
-    , filepath            >=1.5.3.0   && <2.0
-    , megaparsec          >=9.0       && <10.0
-    , parser-combinators  >=1.3.0     && <2.0
-    , pretty-simple       >=4.1.2.0   && <5.0
-    , text                >=2.0.2     && <3.0
+    , base
+    , ccs-value-passing-compiler
+    , text                        >=2.0.2 && <3.0
 
   -- Directories containing source files.
   hs-source-dirs:     app
 
   -- Base language which the package is written in.
+  default-language:   GHC2021
+  default-extensions: OverloadedStrings
+
+test-suite spec
+  import:             warnings
+  hs-source-dirs:     test
+  main-is:            Main.hs
+  other-modules:
+    Parser.LexerSpec
+    SpecHelper
+
+  type:               exitcode-stdio-1.0
+  build-depends:
+    , base
+    , ccs-value-passing-compiler
+    , hspec                       >=2.11.9 && <3.0
+    , hspec-megaparsec            >=2.2.1  && <3.0
+    , megaparsec                  >=9.0    && <10.0
+
   default-language:   GHC2021
   default-extensions: OverloadedStrings
