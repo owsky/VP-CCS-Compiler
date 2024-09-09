@@ -8,5 +8,8 @@
 # P = in(x).Q[in/asd]
 # P = A \ {a,b,c}
 
-A = if 1 == 0 then P else Q
-B = iff.C
+#A = if 1 == 0 then P else Q
+#B = iff.C
+
+#p = a.p
+'if(x).B

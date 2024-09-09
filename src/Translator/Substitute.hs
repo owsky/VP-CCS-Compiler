@@ -17,7 +17,8 @@ concreteA var val (Mul e1 e2) = Mul (concreteA var val e1) (concreteA var val e2
 concreteB :: Text -> Int -> BExpr -> BExpr
 concreteB _ _ (BVal b) = BVal b
 concreteB var val (Eq e1 e2) = Eq (concreteA var val e1) (concreteA var val e2)
-concreteB var val (Leq e1 e2) = Leq (concreteA var val e1) (concreteA var val e2)
+concreteB var val (Lt e1 e2) = Lt (concreteA var val e1) (concreteA var val e2)
+concreteB var val (Gt e1 e2) = Gt (concreteA var val e1) (concreteA var val e2)
 concreteB var val (Not e) = Not $ concreteB var val e
 concreteB var val (And e1 e2) = And (concreteB var val e1) (concreteB var val e2)
 concreteB var val (Or e1 e2) = Or (concreteB var val e1) (concreteB var val e2)

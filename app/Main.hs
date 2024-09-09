@@ -4,7 +4,7 @@ import AST (Statement)
 import Data.Maybe (mapMaybe)
 import Data.Text (Text, lines, pack)
 import Parser.StatementParser (parseInput)
-import Translator.FromVP (statementFromVP)
+import Translator.Translate (translateStatement)
 import Prelude hiding (lines, null)
 
 main :: IO ()
@@ -22,7 +22,7 @@ processLines :: [Text] -> IO [String]
 processLines inputLines = do
   let parsed = map parseInput inputLines
   let statements = mapMaybe checkError parsed
-  let output = concatMap statementFromVP statements
+  let output = concatMap translateStatement statements
   return $ map show output
   where
     checkError :: Either String (Maybe Statement) -> Maybe Statement

@@ -1,6 +1,6 @@
-module Parser.Lexer (tokenize) where
+module Parser.Lexer (tokenize, pActOut, pActIn, pTProc) where
 
-import AST (BExpr, RelabellingFunction (..), RelabellingMapping (..))
+import AST (RelabellingFunction (..), RelabellingMapping (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Functor (($>))
 import Data.Set (fromList)
@@ -9,14 +9,13 @@ import Data.Void (Void)
 import Parser.AExprParser (pAExpr)
 import Parser.AST (Token (..))
 import Parser.BExprParser (pBExpr)
-import Parser.Utils (Parser, binaryL, binaryR, binaryR', comma, curlyParens, lexeme, pWord, roundParens, sc, slash, squareParens, symbol, textUntil)
-import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, label, many, option, parse, sepBy1, (<?>))
-import Text.Megaparsec.Char (char, letterChar, lowerChar, string, upperChar)
-import Text.Megaparsec.Error (errorBundlePretty)
+import Parser.Utils (Parser, binaryL, binaryL', binaryR, comma, curlyParens, lexeme, pWord, roundParens, sc, slash, squareParens, symbol)
+import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, many, option, parse, sepBy1, (<?>))
+import Text.Megaparsec.Char (char, letterChar, lowerChar, upperChar)
 
 -- | Tokenizes the given text
 tokenize :: Text -> Either (ParseErrorBundle Text Void) (Maybe Token)
-tokenize = parse (sc *> choice [Just <$> pToken, eof $> Nothing]) ""
+tokenize = parse (sc *> choice [Just <$> pToken <* eof, eof $> Nothing]) ""
 
 -- | Token parser
 pToken :: Parser Token
@@ -29,8 +28,8 @@ pTerm = choice [roundParens pToken, pTActTau, pTBranch, pRelFn, pResSet, pActOut
 -- | Operator table for makeExprParser
 operatorTable :: [[Operator Parser Token]]
 operatorTable =
-  [ [ binaryR "\\" TRes, -- Restriction: A \ {a,b,c}
-      binaryR' "[" TRel -- Relabeling: A[a/b,c/d]
+  [ [ binaryL "\\" TRes, -- Restriction: A \ {a,b,c}
+      binaryL' "[" TRel -- Relabeling: A[a/b,c/d]
     ],
     [binaryR "." TPre], -- Prefixing: a.A
     [binaryL "|" TPar], -- Parallel composition: A | B
@@ -67,7 +66,7 @@ pActOut = do
 
 -- | Parser for channel names
 pChannel :: Parser Text
-pChannel = pack <$> ((:) <$> lowerChar <*> many letterChar) >>= checkReserved <?> "Channel name"
+pChannel = lexeme ((:) <$> lowerChar <*> many letterChar >>= (checkReserved . pack)) <?> "Channel name"
 
 -- | Parser for internal actions
 pTActTau :: Parser Token
@@ -88,25 +87,13 @@ pResSet = ResSet . fromList <$> (curlyParens $ pChannel `sepBy1` comma) <?> "Res
 -- | Parser for branching
 pTBranch :: Parser Token
 pTBranch = do
-  guard <- pGuard
-  p1 <- pThenBranch
-  p2 <- pToken <?> "Else branch process"
-  return $ TBranch guard p1 p2
-  where
-    pGuard :: Parser BExpr
-    pGuard = label "Branch guard" $ do
-      _ <- lexeme $ pWord "if"
-      guardText <- textUntil (lexeme $ string "then")
-      case parse pBExpr "" guardText of
-        Right guard -> return guard
-        Left err -> fail $ errorBundlePretty err
-
-    pThenBranch :: Parser Token
-    pThenBranch = label "Then branch process" $ do
-      thenBranchText <- textUntil (lexeme $ string "else")
-      case parse pToken "" thenBranchText of
-        Right token -> return token
-        Left err -> fail $ errorBundlePretty err
+  _ <- lexeme $ pWord "if"
+  guard <- pBExpr
+  _ <- lexeme $ pWord "then"
+  thenBranch <- pToken
+  _ <- lexeme $ pWord "else"
+  elseBranch <- pToken
+  return $ TBranch guard thenBranch elseBranch
 
 -- | List of reserved keywords
 reservedKeywords :: [Text]

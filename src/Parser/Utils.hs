@@ -3,9 +3,9 @@ module Parser.Utils where
 import Control.Monad (void)
 import Control.Monad.Combinators.Expr (Operator (InfixL, InfixR, Prefix))
 import Data.Functor (($>))
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec (MonadParsec (eof), Parsec, anySingle, between, lookAhead, manyTill, try, (<|>))
+import Text.Megaparsec (MonadParsec (eof), Parsec, between, lookAhead, try, (<|>))
 import Text.Megaparsec.Char (space1, string)
 import Text.Megaparsec.Char.Lexer qualified as L
 
@@ -67,10 +67,6 @@ binaryR' name f = InfixR (f <$ (try (lookAhead (symbol name)) $> ()))
 -- | Parses a decimal number
 decimal :: Parser Int
 decimal = lexeme L.decimal
-
--- | Parser for capturing text until the given delimiter, which is consumed and discarded
-textUntil :: Parser Text -> Parser Text
-textUntil delimiter = pack <$> manyTill anySingle delimiter
 
 -- | Tries to parse the given word, making sure that it's either followed by whitespace or an end of input
 pWord :: Text -> Parser Text

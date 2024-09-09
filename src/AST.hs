@@ -60,7 +60,7 @@ data Process
 instance Show Process where
   show :: Process -> String
   show (ProcessName name []) = unpack name
-  show (ProcessName name vars) = unpack name ++ "(" ++ showVars vars ++ ")"
+  show (ProcessName name vars) = unpack name ++ "(" ++ (intercalate ", " (map show vars)) ++ ")"
   show (ActionPrefix act proc) = case proc of
     (Choice p1 p2) -> show act ++ "." ++ "(" ++ show (Choice p1 p2) ++ ")"
     (Parallel p1 p2) -> show act ++ "." ++ "(" ++ show (Parallel p1 p2) ++ ")"
@@ -104,7 +104,8 @@ instance Show AExpr where
 data BExpr
   = BVal Bool
   | Eq AExpr AExpr
-  | Leq AExpr AExpr
+  | Lt AExpr AExpr
+  | Gt AExpr AExpr
   | Not BExpr
   | And BExpr BExpr
   | Or BExpr BExpr
@@ -114,14 +115,14 @@ instance Show BExpr where
   show :: BExpr -> String
   show (BVal val) = show val
   show (Eq e1 e2) = binaryShow e1 "==" e2
-  show (Leq e1 e2) = binaryShow e1 "<=" e2
+  show (Lt e1 e2) = binaryShow e1 "<" e2
+  show (Gt e1 e2) = binaryShow e1 ">" e2
   show (Not (BVal b)) = "¬" ++ show b
   show (Not e) = "¬(" ++ show e ++ ")"
   show (And e1 e2) = binaryShow e1 "∧" e2
   show (Or e1 e2) = binaryShow e1 "∨" e2
 
+-- | Given two items of showable type and a string operator, concatenates them
+-- into a single string
 binaryShow :: (Show a) => a -> String -> a -> String
 binaryShow e1 op e2 = show e1 ++ " " ++ op ++ " " ++ show e2
-
-showVars :: [AExpr] -> String
-showVars vars = intercalate ", " (map show vars)

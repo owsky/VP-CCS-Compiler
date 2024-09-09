@@ -11,7 +11,7 @@ pBExpr :: Parser BExpr
 pBExpr = makeExprParser pTerm operatorTable
 
 pTerm :: Parser BExpr
-pTerm = choice [roundParens pBExpr, pBVal, pBEq, pBLeq]
+pTerm = choice [roundParens pBExpr, pBVal, pBEq, pBLt, pBGt]
 
 operatorTable :: [[Operator Parser BExpr]]
 operatorTable =
@@ -35,8 +35,14 @@ pBEq = try $ do
   _ <- symbol "=="
   Eq t1 <$> pAExpr
 
-pBLeq :: Parser BExpr
-pBLeq = try $ do
+pBLt :: Parser BExpr
+pBLt = try $ do
   t1 <- pAExpr
-  _ <- symbol "<="
-  Leq t1 <$> pAExpr
+  _ <- symbol "<"
+  Lt t1 <$> pAExpr
+
+pBGt :: Parser BExpr
+pBGt = try $ do
+  t1 <- pAExpr
+  _ <- symbol ">"
+  Gt t1 <$> pAExpr
