@@ -1,4 +1,4 @@
-module Parser.Lexer where
+module Parser.Lexer (tokenize) where
 
 import AST (BExpr, RelabellingFunction (..), RelabellingMapping (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)

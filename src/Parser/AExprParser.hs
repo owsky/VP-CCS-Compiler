@@ -1,4 +1,4 @@
-module Parser.AExprParser where
+module Parser.AExprParser (pAExpr) where
 
 import AST (AExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)

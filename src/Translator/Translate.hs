@@ -1,4 +1,4 @@
-module Translator.FromVP (statementFromVP) where
+module Translator.Translate (translateStatement) where
 
 import AST (AExpr (..), Action (..), Label (..), Process (..), RelabellingFunction (..), RelabellingMapping (..), Statement (..))
 import Data.List (intercalate)
@@ -8,14 +8,14 @@ import Eval (evalArit, evalBool)
 import Translator.Substitute (substitute)
 
 -- | Translates a VP-CCS Statement into a CCS Statement
-statementFromVP :: Statement -> [Statement]
-statementFromVP (Assignment p1 p2) = case p1 of
-  (ProcessName _ []) -> [Assignment (processFromVP p1) (processFromVP p2)]
+translateStatement :: Statement -> [Statement]
+translateStatement (Assignment p1 p2) = case p1 of
+  (ProcessName _ []) -> [Assignment (translateProcess p1) (translateProcess p2)]
   (ProcessName procName ((AVar varName) : exprs)) -> do
     -- for each variable, concretize it within the nat range and substitute into p2, create a list of procnames for p1 with the concretized variables
     let m = aux 0 4 varName procName p2
     let stmts = [Assignment (ProcessName newProcName exprs) rhs | (newProcName, rhs) <- m]
-    concatMap statementFromVP stmts
+    concatMap translateStatement stmts
   _ -> error "You can only assign to process names"
   where
     aux :: Int -> Int -> Text -> Text -> Process -> [(Text, Process)]
@@ -25,27 +25,27 @@ statementFromVP (Assignment p1 p2) = case p1 of
       let newRhs = substitute varName lowerBound rhs
       (newProcName, newRhs) : aux (lowerBound + 1) higherBound varName procName rhs
 
-processFromVP :: Process -> Process
-processFromVP (ProcessName name vars) = do
+translateProcess :: Process -> Process
+translateProcess (ProcessName name vars) = do
   let vals = map evalArit vars
   let newProcName = name <> concatV vals "_"
   ProcessName newProcName []
-processFromVP (ActionPrefix (ActionName (Input name) Nothing) proc) = ActionPrefix (ActionName (Input name) Nothing) (processFromVP proc)
-processFromVP (ActionPrefix (ActionName (Input name) (Just expr)) proc) = case expr of
+translateProcess (ActionPrefix (ActionName (Input name) Nothing) proc) = ActionPrefix (ActionName (Input name) Nothing) (translateProcess proc)
+translateProcess (ActionPrefix (ActionName (Input name) (Just expr)) proc) = case expr of
   AVar _ -> generateBoundedChoice 0 4 (ActionPrefix (ActionName (Input name) (Just expr)) proc)
-  AVal val -> ActionPrefix (ActionName (Input $ name <> concatV [val] "_") Nothing) (processFromVP proc)
+  AVal val -> ActionPrefix (ActionName (Input $ name <> concatV [val] "_") Nothing) (translateProcess proc)
   _ -> error $ "Unevaluated expression while translating action prefix: " ++ show (ActionPrefix (ActionName (Input name) (Just expr)) proc)
-processFromVP (ActionPrefix (ActionName (Output name) Nothing) proc) = ActionPrefix (ActionName (Output name) Nothing) (processFromVP proc)
-processFromVP (ActionPrefix (ActionName (Output name) (Just var)) proc) = do
+translateProcess (ActionPrefix (ActionName (Output name) Nothing) proc) = ActionPrefix (ActionName (Output name) Nothing) (translateProcess proc)
+translateProcess (ActionPrefix (ActionName (Output name) (Just var)) proc) = do
   let val = evalArit var
   let newActName = pack $ unpack name ++ "_" ++ show val
-  ActionPrefix (ActionName (Output newActName) Nothing) (processFromVP proc)
-processFromVP (ActionPrefix Tau proc) = ActionPrefix Tau (processFromVP proc)
-processFromVP (Choice p1 p2) = Choice (processFromVP p1) (processFromVP p2)
-processFromVP (Parallel p1 p2) = Parallel (processFromVP p1) (processFromVP p2)
-processFromVP (Relabelling p f) = Relabelling (processFromVP p) (relabellingFunctionFromVP 0 4 f)
-processFromVP (Restriction p s) = Restriction (processFromVP p) (restrictionSetFromVP 0 4 s)
-processFromVP (IfThenElse guard p1 p2) = if evalBool guard then processFromVP p1 else processFromVP p2
+  ActionPrefix (ActionName (Output newActName) Nothing) (translateProcess proc)
+translateProcess (ActionPrefix Tau proc) = ActionPrefix Tau (translateProcess proc)
+translateProcess (Choice p1 p2) = Choice (translateProcess p1) (translateProcess p2)
+translateProcess (Parallel p1 p2) = Parallel (translateProcess p1) (translateProcess p2)
+translateProcess (Relabelling p f) = Relabelling (translateProcess p) (translateRelabFn 0 4 f)
+translateProcess (Restriction p s) = Restriction (translateProcess p) (translateRestrictSet 0 4 s)
+translateProcess (IfThenElse guard p1 p2) = if evalBool guard then translateProcess p1 else translateProcess p2
 
 generateBoundedChoice :: Int -> Int -> Process -> Process
 generateBoundedChoice lowerBound higherBound _ | lowerBound > higherBound = ProcessName "0" []
@@ -53,19 +53,19 @@ generateBoundedChoice lowerBound higherBound (ActionPrefix (ActionName (Input na
   let newLabelName = name <> concatV [lowerBound] "_"
   let newAct = ActionName (Input newLabelName) Nothing
   let newProc = substitute var lowerBound p
-  Choice (ActionPrefix newAct (processFromVP newProc)) (generateBoundedChoice (lowerBound + 1) higherBound (ActionPrefix (ActionName (Input name) (Just (AVar var))) p))
+  Choice (ActionPrefix newAct (translateProcess newProc)) (generateBoundedChoice (lowerBound + 1) higherBound (ActionPrefix (ActionName (Input name) (Just (AVar var))) p))
 generateBoundedChoice _ _ p = error $ "Unexpected case, got: " ++ show p
 
 concatV :: (Show a) => [a] -> String -> Text
 concatV [] _ = ""
 concatV as c = pack $ c <> intercalate c (map show as)
 
-relabellingFunctionFromVP :: Int -> Int -> RelabellingFunction -> RelabellingFunction
-relabellingFunctionFromVP _ _ (RelabellingFunction []) = RelabellingFunction []
-relabellingFunctionFromVP lowerBound higherBound (RelabellingFunction (f : fs)) =
+translateRelabFn :: Int -> Int -> RelabellingFunction -> RelabellingFunction
+translateRelabFn _ _ (RelabellingFunction []) = RelabellingFunction []
+translateRelabFn lowerBound higherBound (RelabellingFunction (f : fs)) =
   RelabellingFunction $ aux lowerBound higherBound f <> mappings
   where
-    RelabellingFunction mappings = relabellingFunctionFromVP lowerBound higherBound (RelabellingFunction fs)
+    RelabellingFunction mappings = translateRelabFn lowerBound higherBound (RelabellingFunction fs)
     aux :: Int -> Int -> RelabellingMapping -> [RelabellingMapping]
     aux l h _ | l > h = []
     aux l h (RelabellingMapping from to) = do
@@ -73,8 +73,8 @@ relabellingFunctionFromVP lowerBound higherBound (RelabellingFunction (f : fs)) 
       let newTo = pack $ unpack to ++ "_" ++ show l
       [RelabellingMapping newFrom newTo] <> aux (l + 1) h (RelabellingMapping from to)
 
-restrictionSetFromVP :: Int -> Int -> Set Text -> Set Text
-restrictionSetFromVP lowerBound higherBound labels = fromList . map pack . concatMap (generateConcreteNames lowerBound higherBound) $ toList labels
+translateRestrictSet :: Int -> Int -> Set Text -> Set Text
+translateRestrictSet lowerBound higherBound labels = fromList . map pack . concatMap (genConcreteNames lowerBound higherBound) $ toList labels
 
-generateConcreteNames :: Int -> Int -> Text -> [String]
-generateConcreteNames lowerBound higherBound a = [unpack a ++ "_" ++ show i | i <- [lowerBound .. higherBound]]
+genConcreteNames :: Int -> Int -> Text -> [String]
+genConcreteNames lowerBound higherBound a = [unpack a ++ "_" ++ show i | i <- [lowerBound .. higherBound]]

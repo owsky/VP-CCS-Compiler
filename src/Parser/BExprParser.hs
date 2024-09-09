@@ -1,4 +1,4 @@
-module Parser.BExprParser where
+module Parser.BExprParser (pBExpr) where
 
 import AST (BExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)

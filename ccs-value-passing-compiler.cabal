@@ -29,8 +29,8 @@ library
     Parser.Lexer
     Parser.StatementParser
     Parser.Utils
-    Translator.FromVP
     Translator.Substitute
+    Translator.Translate
 
   build-depends:
     , containers          >=0.6.7   && <0.7
