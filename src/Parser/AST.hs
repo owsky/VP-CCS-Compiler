@@ -4,7 +4,7 @@ import AST (AExpr, BExpr, RelabellingFunction)
 import Data.Set (Set)
 import Data.Text (Text)
 
--- | AST for tokens, used by the parser
+-- | AST for tokens, used by the token parser
 data Token
   = TProc Text [AExpr]
   | TActIn Text (Maybe AExpr)
@@ -17,6 +17,5 @@ data Token
   | TPar Token Token
   | TRes Token Token
   | TRel Token Token
-  | TAss Token Token
   | TBranch BExpr Token Token
   deriving (Eq, Show)

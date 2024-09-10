@@ -1,19 +1,29 @@
-module Parser.StatementParser (parseInput) where
+module Parser.StatementParser (parseInput, parseStatement, parseLines) where
 
 import AST (Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..))
-import Data.Functor (($>))
+import Control.Monad (void)
 import Data.Set (Set)
 import Data.Text (Text)
 import Parser.AST (Token (..))
-import Parser.ProcessParser (pToken)
-import Parser.Utils (Parser, sc, symbol)
-import Text.Megaparsec (MonadParsec (eof, label), choice, errorBundlePretty, parse)
+import Parser.TokenParser (pToken)
+import Parser.Utils (Parser, sc', symbol)
+import Text.Megaparsec (MonadParsec (eof, label), errorBundlePretty, parse, some, (<|>))
+import Text.Megaparsec.Char (eol)
 
--- | Attempts to parse the given text into a statement
-parseInput :: Text -> Either String (Maybe Statement)
-parseInput input = case parse (sc *> choice [Just <$> pStatement <* eof, eof $> Nothing]) "" input of
-  Left bundle -> Left $ errorBundlePretty bundle
-  Right mStatement -> Right mStatement
+-- | Attempts to parse the given text into a list of statements
+parseInput :: Text -> Either String [Statement]
+parseInput input = do
+  let parsed = parse parseLines "" input
+  case parsed of
+    Left bundle -> Left $ errorBundlePretty bundle
+    Right statements -> Right statements
+
+-- | Parser for multiple statements, separated by eol characters
+parseLines :: Parser [Statement]
+parseLines = (some parseStatement) <* eof
+
+parseStatement :: Parser Statement
+parseStatement = sc' *> pStatement <* (void eol <|> eof)
 
 -- | Statement parser
 pStatement :: Parser Statement

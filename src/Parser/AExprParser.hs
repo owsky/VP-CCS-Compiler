@@ -7,6 +7,7 @@ import Parser.Utils (Parser, binaryL, decimal, lexeme, roundParens)
 import Text.Megaparsec (choice, some, (<?>))
 import Text.Megaparsec.Char (letterChar)
 
+-- | Arithmetic expressions parser
 pAExpr :: Parser AExpr
 pAExpr = makeExprParser pTerm operatorTable
 
@@ -21,8 +22,10 @@ operatorTable =
     ]
   ]
 
+-- | Arithmetic value parser
 pAVal :: Parser AExpr
 pAVal = AVal <$> decimal <?> "Arithmetic value"
 
+-- | Arithmetic variable parser
 pAVar :: Parser AExpr
 pAVar = AVar . pack <$> lexeme (some letterChar) <?> "Arithmetic variables"

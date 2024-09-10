@@ -1,21 +1,15 @@
-module Parser.ProcessParser (tokenize, pActOut, pActIn, pTProc, pToken) where
+module Parser.TokenParser (pActOut, pActIn, pTProc, pToken) where
 
 import AST (RelabellingFunction (..), RelabellingMapping (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
-import Data.Functor (($>))
 import Data.Set (fromList)
 import Data.Text (Text, pack, unpack)
-import Data.Void (Void)
 import Parser.AExprParser (pAExpr)
 import Parser.AST (Token (..))
 import Parser.BExprParser (pBExpr)
-import Parser.Utils (Parser, binaryL, binaryL', binaryR, comma, curlyParens, lexeme, pWord, roundParens, sc, slash, squareParens, symbol)
-import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, many, option, parse, sepBy1, (<?>), (<|>))
+import Parser.Utils (Parser, binaryL, binaryL', binaryR, comma, curlyParens, lexeme, pWord, roundParens, slash, squareParens, symbol)
+import Text.Megaparsec (MonadParsec (try), choice, many, option, sepBy1, (<?>), (<|>))
 import Text.Megaparsec.Char (alphaNumChar, char, lowerChar, upperChar)
-
--- | Tokenizes the given text
-tokenize :: Text -> Either (ParseErrorBundle Text Void) (Maybe Token)
-tokenize = parse (sc *> choice [Just <$> pToken <* eof, eof $> Nothing]) ""
 
 -- | Token parser
 pToken :: Parser Token

@@ -6,15 +6,19 @@ import Data.Functor (($>))
 import Data.Text (Text)
 import Data.Void (Void)
 import Text.Megaparsec (MonadParsec (eof), Parsec, between, lookAhead, try, (<|>))
-import Text.Megaparsec.Char (space1, string)
+import Text.Megaparsec.Char (hspace1, space1, string)
 import Text.Megaparsec.Char.Lexer qualified as L
 
 -- | Helper type which parses strings without transformers
 type Parser = Parsec Void Text
 
--- | Space consumer
+-- | Space consumer, does not consume newlines
 sc :: Parser ()
-sc = L.space space1 (L.skipLineComment "#") (L.skipBlockComment "/*" "*/")
+sc = L.space hspace1 (L.skipLineComment "#") (L.skipBlockComment "/*" "*/")
+
+-- | Space consumer, consumes newlines
+sc' :: Parser ()
+sc' = L.space space1 (L.skipLineComment "#") (L.skipBlockComment "/*" "*/")
 
 -- | Consumes any trailing whitespace after parsing the given parser.
 lexeme :: Parser a -> Parser a
@@ -66,4 +70,4 @@ decimal = lexeme L.decimal
 
 -- | Tries to parse the given word, making sure that it's either followed by whitespace or an end of input
 pWord :: Text -> Parser Text
-pWord word = try $ string word <* (void space1 <|> eof)
+pWord word = try $ string word <* (void hspace1 <|> eof)

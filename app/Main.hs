@@ -2,12 +2,12 @@ module Main (main) where
 
 import Control.DeepSeq (deepseq)
 import Data.Maybe (fromMaybe)
-import Data.Text (lines, pack)
+import Data.Text.IO (readFile)
 import GHC.Generics (Generic)
 import Options.Applicative (Parser, ParserInfo, auto, execParser, fullDesc, header, help, helper, info, long, metavar, option, optional, progDesc, short, strArgument, (<**>))
 import ProcessLines (processLines)
 import System.FilePath (replaceExtension, takeExtension)
-import Prelude hiding (lines, null)
+import Prelude hiding (lines, null, readFile)
 
 main :: IO ()
 main = do
@@ -19,9 +19,8 @@ main = do
   outputFilePath <- outputFile inputFilePath
 
   fileContents <- readFile inputFilePath
-  let inputLines = lines $ pack fileContents
-
-  processedLines <- processLines maxInt inputLines
+  processedLines <- processLines maxInt fileContents
+  -- forcing strict evaluation so an empty file is not created in case of errors
   processedLines `deepseq` writeFile outputFilePath (unlines processedLines)
 
 data Args = Args
