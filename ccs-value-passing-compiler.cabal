@@ -26,7 +26,7 @@ library
     Parser.AExprParser
     Parser.AST
     Parser.BExprParser
-    Parser.Lexer
+    Parser.ProcessParser
     Parser.StatementParser
     Parser.Utils
     Translator.Substitute
@@ -37,16 +37,19 @@ library
     , filepath            >=1.5.3.0 && <2.0
     , megaparsec          >=9.0     && <10.0
     , parser-combinators  >=1.3.0   && <2.0
-    , pretty-simple       >=4.1.2.0 && <5.0
-    , text                >=2.0.2   && <3.0
+    , text                >=2.1.1   && <3.0
 
 executable ccs-value-passing-compiler
   import:         opts
   hs-source-dirs: app
   main-is:        Main.hs
+  other-modules:  ProcessLines
   build-depends:
     , ccs-value-passing-compiler
-    , text                        >=2.0.2 && <3.0
+    , deepseq                     >=1.5.0.0  && <1.6
+    , filepath                    >=1.5.3.0  && <2.0
+    , optparse-applicative        >=0.18.1.0 && <0.19
+    , text                        >=2.1.1    && <3.0
 
 test-suite spec
   import:         opts
@@ -54,7 +57,7 @@ test-suite spec
   main-is:        Main.hs
   type:           exitcode-stdio-1.0
   other-modules:
-    Parser.LexerSpec
+    Parser.ProcessParserSpec
     SpecHelper
 
   build-depends:

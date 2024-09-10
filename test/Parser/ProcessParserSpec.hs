@@ -1,4 +1,4 @@
-module Parser.LexerSpec where
+module Parser.ProcessParserSpec where
 
 import AST (AExpr (..), BExpr (..), RelabellingFunction (..), RelabellingMapping (..))
 import Control.Applicative ()
@@ -6,7 +6,7 @@ import Data.Function ((&))
 import Data.Set (fromList)
 import Data.Void ()
 import Parser.AST (Token (..))
-import Parser.Lexer (tokenize)
+import Parser.ProcessParser (tokenize)
 import Test.Hspec (Expectation, Spec, SpecWith, describe, it)
 import Test.Hspec.Megaparsec (shouldFailOn, shouldParse)
 import Text.Megaparsec (ParseErrorBundle)

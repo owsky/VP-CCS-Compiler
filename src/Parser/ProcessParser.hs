@@ -1,4 +1,4 @@
-module Parser.Lexer (tokenize, pActOut, pActIn, pTProc) where
+module Parser.ProcessParser (tokenize, pActOut, pActIn, pTProc, pToken) where
 
 import AST (RelabellingFunction (..), RelabellingMapping (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
@@ -10,8 +10,8 @@ import Parser.AExprParser (pAExpr)
 import Parser.AST (Token (..))
 import Parser.BExprParser (pBExpr)
 import Parser.Utils (Parser, binaryL, binaryL', binaryR, comma, curlyParens, lexeme, pWord, roundParens, sc, slash, squareParens, symbol)
-import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, many, option, parse, sepBy1, (<?>))
-import Text.Megaparsec.Char (char, letterChar, lowerChar, upperChar)
+import Text.Megaparsec (MonadParsec (eof, try), ParseErrorBundle, choice, many, option, parse, sepBy1, (<?>), (<|>))
+import Text.Megaparsec.Char (alphaNumChar, char, lowerChar, upperChar)
 
 -- | Tokenizes the given text
 tokenize :: Text -> Either (ParseErrorBundle Text Void) (Maybe Token)
@@ -33,8 +33,7 @@ operatorTable =
     ],
     [binaryR "." TPre], -- Prefixing: a.A
     [binaryL "|" TPar], -- Parallel composition: A | B
-    [binaryL "+" TChoice], -- ND Choice: A + B
-    [binaryL "=" TAss] -- Assignment: A = b.B
+    [binaryL "+" TChoice] -- ND Choice: A + B
   ]
 
 -- | Parser for process names
@@ -47,7 +46,7 @@ pTProc = do
     else return $ TProc name vars
   where
     pProcName :: Parser Text
-    pProcName = lexeme (choice [(:) <$> upperChar <*> many letterChar, pure <$> char '0']) >>= checkReserved . pack
+    pProcName = lexeme (choice [(:) <$> upperChar <*> many (alphaNumChar <|> char '_'), pure <$> char '0']) >>= checkReserved . pack
 
 -- | Parser for input actions
 pActIn :: Parser Token
@@ -66,7 +65,7 @@ pActOut = do
 
 -- | Parser for channel names
 pChannel :: Parser Text
-pChannel = lexeme ((:) <$> lowerChar <*> many letterChar >>= (checkReserved . pack)) <?> "Channel name"
+pChannel = lexeme ((:) <$> lowerChar <*> many (alphaNumChar <|> char '_') >>= (checkReserved . pack)) <?> "Channel name"
 
 -- | Parser for internal actions
 pTActTau :: Parser Token

@@ -13,7 +13,7 @@ data Label
 instance Show Label where
   show :: Label -> String
   show (Input name) = unpack name
-  show (Output name) = unpack name
+  show (Output name) = "\'" <> unpack name
 
 -- | Extracts the label's name
 getLabelName :: Label -> Text

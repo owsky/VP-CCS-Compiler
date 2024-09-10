@@ -1,36 +1,30 @@
 module Parser.StatementParser (parseInput) where
 
 import AST (Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..))
+import Data.Functor (($>))
 import Data.Set (Set)
 import Data.Text (Text)
-import Debug.Trace (trace)
 import Parser.AST (Token (..))
-import Parser.Lexer (tokenize)
-import Text.Megaparsec (errorBundlePretty)
+import Parser.ProcessParser (pToken)
+import Parser.Utils (Parser, sc, symbol)
+import Text.Megaparsec (MonadParsec (eof, label), choice, errorBundlePretty, parse)
 
 -- | Attempts to parse the given text into a statement
 parseInput :: Text -> Either String (Maybe Statement)
-parseInput l = do
-  let eTok = tokenize l
-  case eTok of
-    Left err -> Left $ errorBundlePretty err
-    Right mTok -> do
-      case mTok of
-        Just tok -> do
-          trace ("Debug - Token: " ++ show tok) $ do
-            statement <- tokenToStatement tok
-            return $ Just statement
-        Nothing -> return Nothing
+parseInput input = case parse (sc *> choice [Just <$> pStatement <* eof, eof $> Nothing]) "" input of
+  Left bundle -> Left $ errorBundlePretty bundle
+  Right mStatement -> Right mStatement
 
--- | Attempts to convert a given into into a statement
-tokenToStatement :: Token -> Either String Statement
-tokenToStatement (TAss left right) = do
-  lhs <- tokenToProcess left
-  rhs <- tokenToProcess right
-  case lhs of
-    ProcessName name mvar -> return $ Assignment (ProcessName name mvar) rhs
-    _ -> Left $ "Expected a process name on the left-hand side of the assignment, got: " ++ show rhs
-tokenToStatement token = Left $ "Expecting a statement, got: " ++ show token
+-- | Statement parser
+pStatement :: Parser Statement
+pStatement = label "statement" $ do
+  lhs <- pToken
+  _ <- symbol "="
+  rhs <- pToken
+  case (tokenToProcess lhs, tokenToProcess rhs) of
+    (Right p1, Right p2) -> return $ Assignment p1 p2
+    (Left err, _) -> fail err
+    (_, Left err) -> fail err
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action

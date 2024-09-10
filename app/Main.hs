@@ -1,31 +1,45 @@
 module Main (main) where
 
-import AST (Statement)
-import Data.Maybe (mapMaybe)
-import Data.Text (Text, lines, pack)
-import Parser.StatementParser (parseInput)
-import Translator.Translate (translateStatement)
+import Control.DeepSeq (deepseq)
+import Data.Maybe (fromMaybe)
+import Data.Text (lines, pack)
+import GHC.Generics (Generic)
+import Options.Applicative (Parser, ParserInfo, auto, execParser, fullDesc, header, help, helper, info, long, metavar, option, optional, progDesc, short, strArgument, (<**>))
+import ProcessLines (processLines)
+import System.FilePath (replaceExtension, takeExtension)
 import Prelude hiding (lines, null)
 
 main :: IO ()
 main = do
-  let inputFilePath = "programs/cs.vccs"
-  let outputFilePath = "programs/cs.ccs"
+  args <- execParser opts
+
+  let maxInt = fromMaybe 5 $ maxIntArg args -- default max int is 5 for convenience
+  let inputFilePath = pathArg args
+
+  outputFilePath <- outputFile inputFilePath
 
   fileContents <- readFile inputFilePath
   let inputLines = lines $ pack fileContents
 
-  processedLines <- processLines inputLines
-  writeFile outputFilePath (unlines processedLines)
+  processedLines <- processLines maxInt inputLines
+  processedLines `deepseq` writeFile outputFilePath (unlines processedLines)
 
-processLines :: [Text] -> IO [String]
-processLines inputLines = do
-  let parsed = map parseInput inputLines
-  let statements = mapMaybe checkError parsed
-  let output = concatMap translateStatement statements
-  return $ map show output
-  where
-    checkError :: Either String (Maybe Statement) -> Maybe Statement
-    checkError eVal = case eVal of
-      Left err -> error err
-      Right val -> val
+data Args = Args
+  { maxIntArg :: Maybe Int,
+    pathArg :: FilePath
+  }
+  deriving (Show, Generic)
+
+argsParser :: Parser Args
+argsParser =
+  Args
+    <$> optional (option auto (long "max" <> short 'm' <> metavar "MAX" <> help "Maximum natural"))
+    <*> strArgument (metavar "PATH" <> help "Input program file path")
+
+opts :: ParserInfo Args
+opts = info (argsParser <**> helper) (fullDesc <> progDesc "" <> header "")
+
+outputFile :: FilePath -> IO (FilePath)
+outputFile path
+  | takeExtension path == ".vccs" = return $ replaceExtension path ".ccs"
+  | otherwise = fail $ "Input file has the wrong file extension. Expected: .vccs, got: " ++ takeExtension path

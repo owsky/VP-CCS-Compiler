@@ -56,13 +56,9 @@ binaryL name f = InfixL (f <$ symbol name)
 binaryR :: forall a. Text -> (a -> a -> a) -> Operator Parser a
 binaryR name f = InfixR (f <$ symbol name)
 
--- | Creates a polymorphic, left-associated, binary operator that does not consume the operator it matches
+-- | Creates a polymorphic, left-associative, binary operator that does not consume the operator it matches
 binaryL' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
 binaryL' name f = InfixL (f <$ (try (lookAhead (symbol name)) $> ()))
-
--- | Creates a polymorphic, left-associated, binary operator that does not consume the operator it matches
-binaryR' :: forall a. Text -> (a -> a -> a) -> Operator Parser a
-binaryR' name f = InfixR (f <$ (try (lookAhead (symbol name)) $> ()))
 
 -- | Parses a decimal number
 decimal :: Parser Int
