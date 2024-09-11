@@ -8,7 +8,7 @@ processLines :: Int -> Text -> IO [String]
 processLines maxInt inputLines = do
   let parsed = parseInput inputLines
   case parsed of
-    Left err -> error err
+    Left err -> fail err
     Right statements -> do
       let output = concatMap (\s -> translateStatement maxInt s) statements
       return $ map show output

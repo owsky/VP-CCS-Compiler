@@ -1,18 +1,18 @@
-module Parser.AExprParser (pAExpr) where
+module Parser.AExprParser (pAExpr, pAVar) where
 
 import AST (AExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Text (pack)
 import Parser.Utils (Parser, binaryL, decimal, lexeme, roundParens)
-import Text.Megaparsec (choice, some, (<?>))
-import Text.Megaparsec.Char (letterChar)
+import Text.Megaparsec (MonadParsec (hidden), choice, some, (<?>))
+import Text.Megaparsec.Char (lowerChar)
 
 -- | Arithmetic expressions parser
 pAExpr :: Parser AExpr
 pAExpr = makeExprParser pTerm operatorTable
 
 pTerm :: Parser AExpr
-pTerm = choice [roundParens pAExpr, pAVal, pAVar]
+pTerm = choice [hidden $ roundParens pAExpr, pAVal, pAVar]
 
 operatorTable :: [[Operator Parser AExpr]]
 operatorTable =
@@ -24,8 +24,8 @@ operatorTable =
 
 -- | Arithmetic value parser
 pAVal :: Parser AExpr
-pAVal = AVal <$> decimal <?> "Arithmetic value"
+pAVal = AVal <$> decimal <?> "arithmetic value"
 
 -- | Arithmetic variable parser
 pAVar :: Parser AExpr
-pAVar = AVar . pack <$> lexeme (some letterChar) <?> "Arithmetic variables"
+pAVar = AVar . pack <$> lexeme (some $ lowerChar) <?> "arithmetic variable"

@@ -4,11 +4,11 @@ import AST (RelabellingFunction (..), RelabellingMapping (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Set (fromList)
 import Data.Text (Text, pack, unpack)
-import Parser.AExprParser (pAExpr)
+import Parser.AExprParser (pAExpr, pAVar)
 import Parser.AST (Token (..))
 import Parser.BExprParser (pBExpr)
 import Parser.Utils (Parser, binaryL, binaryL', binaryR, comma, curlyParens, lexeme, pWord, roundParens, slash, squareParens, symbol)
-import Text.Megaparsec (MonadParsec (try), choice, many, option, sepBy1, (<?>), (<|>))
+import Text.Megaparsec (choice, many, option, sepBy1, (<?>), (<|>))
 import Text.Megaparsec.Char (alphaNumChar, char, lowerChar, upperChar)
 
 -- | Token parser
@@ -33,10 +33,10 @@ operatorTable =
 -- | Parser for process names
 pTProc :: Parser Token
 pTProc = do
-  name <- pProcName <?> "Process Name"
-  vars <- option [] (try $ roundParens (pAExpr `sepBy1` comma)) <?> "Process variables"
+  name <- pProcName <?> "process name"
+  vars <- option [] (roundParens (pAVar `sepBy1` comma)) <?> "process variables"
   if name == "0" && not (null vars)
-    then fail "Error: dead process cannot have variables"
+    then fail "dead process cannot have variables"
     else return $ TProc name vars
   where
     pProcName :: Parser Text
@@ -45,37 +45,37 @@ pTProc = do
 -- | Parser for input actions
 pActIn :: Parser Token
 pActIn = do
-  name <- pChannel <?> "Input channel name"
-  var <- option Nothing (Just <$> roundParens (pAExpr)) <?> "Input action variable"
+  name <- pChannel <?> "input channel name"
+  var <- option Nothing (Just <$> roundParens (pAExpr)) <?> "input action variable"
   return $ TActIn name var
 
 -- | Parser for output actions
 pActOut :: Parser Token
 pActOut = do
   _ <- char '\'' <?> "\' character, prefixes output channel names"
-  name <- pChannel <?> "Output channel name"
-  var <- option Nothing (Just <$> (roundParens (pAExpr))) <?> "Input action variable"
+  name <- pChannel <?> "output channel name"
+  var <- option Nothing (Just <$> (roundParens (pAExpr))) <?> "input action variable"
   return $ TActOut name var
 
 -- | Parser for channel names
 pChannel :: Parser Text
-pChannel = lexeme ((:) <$> lowerChar <*> many (alphaNumChar <|> char '_') >>= (checkReserved . pack)) <?> "Channel name"
+pChannel = lexeme ((:) <$> lowerChar <*> many (alphaNumChar <|> char '_') >>= (checkReserved . pack)) <?> "channel name"
 
 -- | Parser for internal actions
 pTActTau :: Parser Token
-pTActTau = TActTau <$ symbol "τ" <?> "Internal action"
+pTActTau = TActTau <$ symbol "τ" <?> "internal action"
 
 -- | Parser for action relabelling functions
 pActionRelabel :: Parser RelabellingMapping
-pActionRelabel = RelabellingMapping <$> (pChannel <* slash) <*> pChannel <?> "Relabelling mapping, e.g., a/b"
+pActionRelabel = RelabellingMapping <$> (pChannel <* slash) <*> pChannel <?> "relabelling mapping"
 
 -- | Parser for relabelling functions
 pRelFn :: Parser Token
-pRelFn = RelFn . RelabellingFunction <$> (squareParens $ pActionRelabel `sepBy1` comma) <?> "Relabelling function, e.g., [a/b, c/d]"
+pRelFn = RelFn . RelabellingFunction <$> (squareParens $ pActionRelabel `sepBy1` comma) <?> "relabelling function"
 
 -- | Parser for channel restriction sets
 pResSet :: Parser Token
-pResSet = ResSet . fromList <$> (curlyParens $ pChannel `sepBy1` comma) <?> "Restriction set, e.g., {a,b,c}"
+pResSet = ResSet . fromList <$> (curlyParens $ pChannel `sepBy1` comma) <?> "restriction set"
 
 -- | Parser for branching
 pTBranch :: Parser Token

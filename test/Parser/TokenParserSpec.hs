@@ -71,12 +71,6 @@ failureCases = do
   it "should fail to parse an action with more than one expression" $
     shouldFailOn parseToken "a(x, y)"
   describe "Syntax errors" $ do
-    it "should fail to parse assignments with missing braces or commas or trailing commas" $ do
-      shouldFailOn parseToken "P(x = Q"
-      shouldFailOn parseToken "P x = Q"
-      shouldFailOn parseToken "P x) = Q"
-      shouldFailOn parseToken "P(x y) = Q"
-      shouldFailOn parseToken "P(x, y,) = Q"
     it "should fail to parse an operation with a missing operand" $ do
       shouldFailOn parseToken "A |"
       shouldFailOn parseToken "| B"

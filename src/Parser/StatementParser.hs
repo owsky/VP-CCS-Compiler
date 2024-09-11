@@ -29,31 +29,32 @@ parseStatement = sc' *> pStatement <* (void eol <|> eof)
 pStatement :: Parser Statement
 pStatement = label "statement" $ do
   lhs <- pToken
+  lhsP <- case tokenToProcess lhs of
+    Left err -> fail err
+    Right p -> return p
   _ <- symbol "="
   rhs <- pToken
-  case (tokenToProcess lhs, tokenToProcess rhs) of
-    (Right p1, Right p2) -> return $ Assignment p1 p2
-    (Left err, _) -> fail err
-    (_, Left err) -> fail err
+  rhsP <- case tokenToProcess rhs of
+    Left err -> fail err
+    Right p -> return p
+  return $ Assignment lhsP rhsP
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
 tokenToAction (TActIn name expr) = Right $ ActionName (Input name) expr
 tokenToAction (TActOut name expr) = Right $ ActionName (Output name) expr
 tokenToAction TActTau = Right Tau
-tokenToAction other = Left $ "Expecting action, got something else: " ++ show other
+tokenToAction other = Left $ "unexpected " <> show other <> "\nexpecting <Action>"
 
 -- | Attempts to convert a given into into a relabelling function
 tokenToRelabelFn :: Token -> Either String RelabellingFunction
-tokenToRelabelFn token = case token of
-  RelFn f -> Right f
-  _ -> Left "Error while parsing the relabeling function"
+tokenToRelabelFn (RelFn f) = Right f
+tokenToRelabelFn other = Left $ "unexpected " <> show other <> "\nexpecting <Relabeling Function>"
 
 -- | Attempts to convert a given into into a label set for restriction
 tokenToLabelSet :: Token -> Either String (Set Text)
-tokenToLabelSet token = case token of
-  ResSet s -> Right s
-  _ -> Left "Error while parsing the restriction set"
+tokenToLabelSet (ResSet s) = Right s
+tokenToLabelSet other = Left $ "unexpected " <> show other <> "\nexpecting <Restriction Set>"
 
 -- | Attempts to convert a given into into a process
 tokenToProcess :: Token -> Either String Process
@@ -64,4 +65,4 @@ tokenToProcess (TPar left right) = Parallel <$> tokenToProcess left <*> tokenToP
 tokenToProcess (TRel left right) = Relabelling <$> tokenToProcess left <*> tokenToRelabelFn right
 tokenToProcess (TRes left right) = Restriction <$> tokenToProcess left <*> tokenToLabelSet right
 tokenToProcess (TBranch guard t1 t2) = IfThenElse guard <$> tokenToProcess t1 <*> tokenToProcess t2
-tokenToProcess token = Left $ "Expected a process, got: " ++ show token
+tokenToProcess token = Left $ "unexpected " <> show token <> "\nexpecting <Process>"
