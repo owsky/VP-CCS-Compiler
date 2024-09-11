@@ -14,6 +14,7 @@ main = do
   args <- execParser opts
 
   let maxInt = fromMaybe 5 $ maxIntArg args -- default max int is 5 for convenience
+  if maxInt < 0 then fail "The maximum integer should be a natural number" else pure ()
   let inputFilePath = pathArg args
 
   outputFilePath <- outputFile inputFilePath
