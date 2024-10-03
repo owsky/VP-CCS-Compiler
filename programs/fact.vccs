@@ -1,0 +1,2 @@
+Fact = in(x).F(x,1)
+F(x,y) = if x == 0 then 'out(y).Fact else τ.F(x - 1, x * y)

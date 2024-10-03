@@ -1,2 +1,1 @@
-#P(x) = (if 1 == 2 then P else Q).B
-P(x) = A[a/b]
+P(x) = 'act(y + 1).P(x)

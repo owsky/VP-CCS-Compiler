@@ -71,3 +71,8 @@ decimal = lexeme L.decimal
 -- | Tries to parse the given word, making sure that it's either followed by whitespace or an end of input
 pWord :: Text -> Parser Text
 pWord word = try $ string word <* (void hspace1 <|> eof)
+
+-- Define the function
+eitherToMonad :: (Monad m, MonadFail m) => Either String a -> m a
+eitherToMonad (Left err) = fail err
+eitherToMonad (Right val) = return val

@@ -1,8 +1,8 @@
 module Parser.AExprParser (pAExpr, pAVar) where
 
-import AST (AExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Text (pack)
+import Grammars.AST (AExpr (..))
 import Parser.Utils (Parser, binaryL, decimal, lexeme, roundParens)
 import Text.Megaparsec (MonadParsec (hidden), choice, some, (<?>))
 import Text.Megaparsec.Char (lowerChar)

@@ -1,14 +1,14 @@
 module Parser.TokenParser (pActOut, pActIn, pTProc, pToken) where
 
-import AST (RelabellingFunction (..), RelabellingMapping (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
 import Data.Set (fromList)
 import Data.Text (Text, pack, unpack)
-import Parser.AExprParser (pAExpr, pAVar)
-import Parser.AST (Token (..))
+import Grammars.AST (RelabellingFunction (..), RelabellingMapping (..))
+import Parser.AExprParser (pAExpr)
 import Parser.BExprParser (pBExpr)
+import Parser.Token (Token (..))
 import Parser.Utils (Parser, binaryL, binaryL', binaryR, comma, curlyParens, lexeme, pWord, roundParens, slash, squareParens, symbol)
-import Text.Megaparsec (choice, many, option, sepBy1, (<?>), (<|>))
+import Text.Megaparsec (MonadParsec (label), choice, many, option, sepBy1, (<?>), (<|>))
 import Text.Megaparsec.Char (alphaNumChar, char, lowerChar, upperChar)
 
 -- | Token parser
@@ -34,10 +34,10 @@ operatorTable =
 pTProc :: Parser Token
 pTProc = do
   name <- pProcName <?> "process name"
-  vars <- option [] (roundParens (pAVar `sepBy1` comma)) <?> "process variables"
-  if name == "0" && not (null vars)
-    then fail "dead process cannot have variables"
-    else return $ TProc name vars
+  exprs <- option [] (roundParens (pAExpr `sepBy1` comma)) <?> "process variables"
+  if name == "0" && not (null exprs)
+    then fail "dead process cannot have expressions"
+    else return $ TProc name exprs
   where
     pProcName :: Parser Text
     pProcName = lexeme (choice [(:) <$> upperChar <*> many (alphaNumChar <|> char '_'), pure <$> char '0']) >>= checkReserved . pack
@@ -71,11 +71,15 @@ pActionRelabel = RelabellingMapping <$> (pChannel <* slash) <*> pChannel <?> "re
 
 -- | Parser for relabelling functions
 pRelFn :: Parser Token
-pRelFn = RelFn . RelabellingFunction <$> (squareParens $ pActionRelabel `sepBy1` comma) <?> "relabelling function"
+pRelFn = label "relabelling function" $ do
+  relFn <- RelabellingFunction <$> (squareParens $ pActionRelabel `sepBy1` comma)
+  return $ RelFn relFn
 
 -- | Parser for channel restriction sets
 pResSet :: Parser Token
-pResSet = ResSet . fromList <$> (curlyParens $ pChannel `sepBy1` comma) <?> "restriction set"
+pResSet = label "restriction set" $ do
+  resSet <- (curlyParens $ pChannel `sepBy1` comma)
+  return $ ResSet (fromList resSet)
 
 -- | Parser for branching
 pTBranch :: Parser Token

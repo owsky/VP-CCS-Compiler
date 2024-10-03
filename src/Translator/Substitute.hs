@@ -1,7 +1,8 @@
 module Translator.Substitute (substitute) where
 
-import AST (AExpr (..), Action (..), BExpr (..), Process (..))
 import Data.Text (Text)
+import Grammars.AST (AExpr (..), BExpr (..))
+import Grammars.VP_AST (Action (..), Process (..))
 
 -- | Concretizes all the variables in the given arithmetic expression which match
 -- the provided variable name by replacing the variable with the given value

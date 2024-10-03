@@ -1,7 +1,7 @@
 module Parser.BExprParser (pBExpr) where
 
-import AST (BExpr (..))
 import Control.Monad.Combinators.Expr (Operator, makeExprParser)
+import Grammars.AST (BExpr (..))
 import Parser.AExprParser (pAExpr)
 import Parser.Utils (Parser, binaryL, lexeme, prefix, roundParens, symbol)
 import Text.Megaparsec (MonadParsec (try), choice, (<?>))

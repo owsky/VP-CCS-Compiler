@@ -1,14 +1,15 @@
 module Eval (evalArit, evalBool) where
 
-import AST (AExpr (..), BExpr (..))
+import Data.Text (unpack)
+import Grammars.AST (AExpr (..), BExpr (..))
 
 -- | Evaluates an arithmetic expression into an integer value. Will fail if the expression contains variables
-evalArit :: AExpr -> Int
-evalArit (AVal val) = val
-evalArit (AVar var) = error $ "Can't evaluate arithmetic expressions with variable: " ++ show var
-evalArit (Sum e1 e2) = evalArit e1 + evalArit e2
-evalArit (Min e1 e2) = evalArit e1 - evalArit e2
-evalArit (Mul e1 e2) = evalArit e1 * evalArit e2
+evalArit :: AExpr -> Either String Int
+evalArit (AVal val) = Right val
+evalArit (AVar var) = Left $ "Found unbound variable: " ++ unpack var
+evalArit (Sum e1 e2) = (+) <$> evalArit e1 <*> evalArit e2
+evalArit (Min e1 e2) = (-) <$> evalArit e1 <*> evalArit e2
+evalArit (Mul e1 e2) = (*) <$> evalArit e1 <*> evalArit e2
 
 -- | Evaluates a Boolean expression into a Boolean value.
 evalBool :: BExpr -> Bool

@@ -1,49 +1,36 @@
-module Parser.StatementParser (parseInput, parseStatement, parseLines) where
+module Parser.StatementParser (parseStatement) where
 
-import AST (Action (..), Label (..), Process (..), RelabellingFunction (..), Statement (..))
 import Control.Monad (void)
 import Data.Set (Set)
 import Data.Text (Text)
-import Parser.AST (Token (..))
+import Grammars.AST (Label (..), RelabellingFunction (..))
+import Grammars.Pure_AST as Pure (Statement (..))
+import Grammars.VP_AST as VP (Action (..), Process (..), Statement (..))
+import Parser.Token (Token (..))
 import Parser.TokenParser (pToken)
-import Parser.Utils (Parser, sc', symbol)
-import Text.Megaparsec (MonadParsec (eof, label), errorBundlePretty, parse, some, (<|>))
+import Parser.Utils (Parser, eitherToMonad, sc', symbol)
+import Text.Megaparsec (MonadParsec (eof, label), (<|>))
 import Text.Megaparsec.Char (eol)
+import Translator.Translate (translateStatement)
 
--- | Attempts to parse the given text into a list of statements
-parseInput :: Text -> Either String [Statement]
-parseInput input = do
-  let parsed = parse parseLines "" input
-  case parsed of
-    Left bundle -> Left $ errorBundlePretty bundle
-    Right statements -> Right statements
-
--- | Parser for multiple statements, separated by eol characters
-parseLines :: Parser [Statement]
-parseLines = (some parseStatement) <* eof
-
-parseStatement :: Parser Statement
-parseStatement = sc' *> pStatement <* (void eol <|> eof)
+parseStatement :: Int -> Parser [Pure.Statement]
+parseStatement maxInt = sc' *> pStatement maxInt <* (void eol <|> eof)
 
 -- | Statement parser
-pStatement :: Parser Statement
-pStatement = label "statement" $ do
+pStatement :: Int -> Parser [Pure.Statement]
+pStatement maxInt = label "statement" $ do
   lhs <- pToken
-  lhsP <- case tokenToProcess lhs of
-    Left err -> fail err
-    Right p -> return p
+  lhsP <- eitherToMonad $ tokenToProcess lhs
   _ <- symbol "="
   rhs <- pToken
-  rhsP <- case tokenToProcess rhs of
-    Left err -> fail err
-    Right p -> return p
-  return $ Assignment lhsP rhsP
+  rhsP <- eitherToMonad $ tokenToProcess rhs
+  eitherToMonad $ translateStatement maxInt (VP.Assignment lhsP rhsP)
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action
 tokenToAction (TActIn name expr) = Right $ ActionName (Input name) expr
 tokenToAction (TActOut name expr) = Right $ ActionName (Output name) expr
-tokenToAction TActTau = Right Tau
+tokenToAction TActTau = Right $ Tau
 tokenToAction other = Left $ "unexpected " <> show other <> "\nexpecting <Action>"
 
 -- | Attempts to convert a given into into a relabelling function
