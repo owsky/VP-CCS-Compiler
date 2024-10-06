@@ -9,18 +9,28 @@ import Grammars.VP_AST as VP (Action (..), Process (..), Statement (..))
 import Parser.Token (Token (..))
 import Parser.TokenParser (pToken)
 import Parser.Utils (Parser, eitherToMonad, sc', symbol)
-import Text.Megaparsec (MonadParsec (eof, label), (<|>))
+import Text.Megaparsec (MonadParsec (eof, label, try), choice, (<|>))
 import Text.Megaparsec.Char (eol)
-import Translator.Translate (translateStatement)
+import Translator.Translate (translateProcess, translateStatement)
 
 -- | Invokes the statement parser after consuming all preceding whitespace
 -- | and consumes either an end of line or an end of file afterwards
 parseStatement :: Int -> Parser [Pure.Statement]
 parseStatement maxInt = sc' *> pStatement maxInt <* (void eol <|> eof)
 
--- | Statement parser
 pStatement :: Int -> Parser [Pure.Statement]
-pStatement maxInt = label "statement" $ do
+pStatement maxInt = choice [pAssignment maxInt, pExpression maxInt]
+
+pExpression :: Int -> Parser [Pure.Statement]
+pExpression maxInt = label "expression" $ do
+  tok <- pToken
+  p <- eitherToMonad $ tokenToProcess tok
+  newP <- eitherToMonad $ translateProcess maxInt p
+  return [Expression newP]
+
+-- | Statement parser
+pAssignment :: Int -> Parser [Pure.Statement]
+pAssignment maxInt = label "assignment" $ try $ do
   lhs <- pToken
   lhsP <- eitherToMonad $ tokenToProcess lhs
   _ <- symbol "="

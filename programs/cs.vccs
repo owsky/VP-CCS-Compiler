@@ -1,3 +1,6 @@
-CS = 'pub.CS_1
-CS_1 = 'coin.CS_2
-CS_2 = coffee.CS
+CTM = coin(x).('coffee.(if x > 2 then 'change(x - 2).CTM else 'err.'change(x).CTM) + 'tea.(if x > 1 then 'change(x-1).CTM else 'err.change(x).CTM))
+
+CS1(b) = 'pub.wage(x).CS2(b + x)
+CS2(b) = 'coin(b).coffee.(change(x).'drink.CS1(x) + err.change(x).CS1(x))
+
+Office = (CS1(2) | CTM) \ {coin, coffee, tea, err}

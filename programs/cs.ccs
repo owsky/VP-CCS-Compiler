@@ -1,3 +1,10 @@
-CS = 'pub.CS_1
-CS_1 = 'coin.CS_2
-CS_2 = coffee.CS
+CTM = coin_0.('coffee.'err.'change_0.CTM + 'tea.'err.change_0.CTM) + coin_1.('coffee.'err.'change_1.CTM + 'tea.'err.change_1.CTM) + coin_2.('coffee.'err.'change_2.CTM + 'tea.'change_1.CTM) + coin_3.('coffee.'change_1.CTM + 'tea.'change_2.CTM)
+CS1_0 = 'pub.(wage_0.CS2_0 + wage_1.CS2_1 + wage_2.CS2_2 + wage_3.CS2_3)
+CS1_1 = 'pub.(wage_0.CS2_1 + wage_1.CS2_2 + wage_2.CS2_3 + wage_3.CS2_3)
+CS1_2 = 'pub.(wage_0.CS2_2 + wage_1.CS2_3 + wage_2.CS2_3 + wage_3.CS2_3)
+CS1_3 = 'pub.(wage_0.CS2_3 + wage_1.CS2_3 + wage_2.CS2_3 + wage_3.CS2_3)
+CS2_0 = 'coin_0.coffee.(change_0.'drink.CS1_0 + change_1.'drink.CS1_1 + change_2.'drink.CS1_2 + change_3.'drink.CS1_3 + err.(change_0.CS1_0 + change_1.CS1_1 + change_2.CS1_2 + change_3.CS1_3))
+CS2_1 = 'coin_1.coffee.(change_0.'drink.CS1_0 + change_1.'drink.CS1_1 + change_2.'drink.CS1_2 + change_3.'drink.CS1_3 + err.(change_0.CS1_0 + change_1.CS1_1 + change_2.CS1_2 + change_3.CS1_3))
+CS2_2 = 'coin_2.coffee.(change_0.'drink.CS1_0 + change_1.'drink.CS1_1 + change_2.'drink.CS1_2 + change_3.'drink.CS1_3 + err.(change_0.CS1_0 + change_1.CS1_1 + change_2.CS1_2 + change_3.CS1_3))
+CS2_3 = 'coin_3.coffee.(change_0.'drink.CS1_0 + change_1.'drink.CS1_1 + change_2.'drink.CS1_2 + change_3.'drink.CS1_3 + err.(change_0.CS1_0 + change_1.CS1_1 + change_2.CS1_2 + change_3.CS1_3))
+Office = CS1_2 | CTM \ {coffee_0, coffee_1, coffee_2, coffee_3, coin_0, coin_1, coin_2, coin_3, err_0, err_1, err_2, err_3, tea_0, tea_1, tea_2, tea_3}

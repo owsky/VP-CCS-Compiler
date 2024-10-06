@@ -1,0 +1,4 @@
+Counter_0 = inc.Counter_1 + Counter_0
+Counter_1 = inc.Counter_2 + Counter_0
+Counter_2 = inc.Counter_3 + Counter_1
+Counter_3 = inc.Counter_4 + Counter_2

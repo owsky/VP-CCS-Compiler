@@ -1,0 +1,3 @@
+Buffer = in(x).Half(x)
+Half(x) = in(y).Full(x,y) + out(x).Buffer
+Full(x,y) = out(x).Half(y)

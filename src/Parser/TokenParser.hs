@@ -33,14 +33,11 @@ operatorTable =
 -- | Parser for process names
 pTProc :: Parser Token
 pTProc = do
-  name <- pProcName <?> "process name"
+  name <- lexeme (choice [(:) <$> upperChar <*> many (alphaNumChar <|> char '_'), pure <$> char '0']) >>= checkReserved . pack <?> "process name"
   exprs <- option [] (roundParens (pAExpr `sepBy1` comma)) <?> "process variables"
   if name == "0" && not (null exprs)
     then fail "dead process cannot have expressions"
     else return $ TProc name exprs
-  where
-    pProcName :: Parser Text
-    pProcName = lexeme (choice [(:) <$> upperChar <*> many (alphaNumChar <|> char '_'), pure <$> char '0']) >>= checkReserved . pack
 
 -- | Parser for input actions
 pActIn :: Parser Token
@@ -71,9 +68,7 @@ pActionRelabel = RelabellingMapping <$> (pChannel <* slash) <*> pChannel <?> "re
 
 -- | Parser for relabelling functions
 pRelFn :: Parser Token
-pRelFn = label "relabelling function" $ do
-  relFn <- RelabellingFunction <$> (squareParens $ pActionRelabel `sepBy1` comma)
-  return $ RelFn relFn
+pRelFn = RelFn <$> RelabellingFunction <$> (squareParens $ pActionRelabel `sepBy1` comma) <?> "relabelling function"
 
 -- | Parser for channel restriction sets
 pResSet :: Parser Token
@@ -97,8 +92,8 @@ reservedKeywords :: [Text]
 reservedKeywords = ["if", "then", "else"]
 
 -- | Checks whether the provided word is contained in the reserved keywords list.
--- If it is, then it fails with an error message
--- Otherwise it is wrapped in the Parser monad and returned
+-- | If it is, then it fails with an error message
+-- | Otherwise it is wrapped in the Parser monad and returned
 checkReserved :: Text -> Parser Text
 checkReserved word =
   if word `elem` reservedKeywords

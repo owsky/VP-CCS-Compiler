@@ -1,0 +1,3 @@
+A(x) = 'outa(x*2).B(x+1)
+B(x) = 'outb(x-3).A(x+4)
+(A(5) | B(5)) [out/outa, out/outb]

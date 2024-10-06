@@ -68,7 +68,7 @@ data RelabellingMapping = RelabellingMapping Text Text deriving (Eq)
 
 instance Show RelabellingMapping where
   show :: RelabellingMapping -> String
-  show (RelabellingMapping from to) = unpack from ++ "/" ++ unpack to
+  show (RelabellingMapping to from) = unpack to ++ "/" ++ unpack from
 
 -- | AST for relabelling functions, e.g., [a/b, c/d]
 data RelabellingFunction = RelabellingFunction [RelabellingMapping] deriving (Eq)

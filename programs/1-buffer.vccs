@@ -1,0 +1,2 @@
+Buffer = in(x).Full(x)
+Full(x) = out(x).Buffer

@@ -1,0 +1,9 @@
+A_0 = 'outa_0.B_1
+A_1 = 'outa_2.B_2
+A_2 = 'outa_3.B_3
+A_3 = 'outa_3.B_3
+B_0 = 'outb_0.A_3
+B_1 = 'outb_0.A_3
+B_2 = 'outb_0.A_3
+B_3 = 'outb_0.A_3
+(A_3 | B_3)[out_0/outa_0, out_1/outa_1, out_2/outa_2, out_3/outa_3, out_0/outb_0, out_1/outb_1, out_2/outb_2, out_3/outb_3]

@@ -1,4 +1,4 @@
-module Translator.Translate (translateStatement) where
+module Translator.Translate (translateStatement, translateProcess) where
 
 import Data.List (intercalate)
 import Data.Set (Set, fromList, toList)
@@ -30,8 +30,8 @@ translateStatement maxInt (VP.Assignment p1 p2) = case p1 of
 
 translateProcess :: Int -> VP.Process -> Either String Pure.Process
 -- a process name gets its expressions evaluated (if any) and the pure process uses the concrete values in its name
-translateProcess _ (VP.ProcessName name exprs) = do
-  vals <- mapM evalArit exprs
+translateProcess maxInt (VP.ProcessName name exprs) = do
+  vals <- mapM (\e -> evalArit e maxInt) exprs
   return $ Pure.ProcessName $ name <> concatV vals "_"
 -- an action prefix translation is discriminated depending on what kind of action and expression it carries
 translateProcess maxInt (VP.ActionPrefix act proc) = case act of
@@ -49,16 +49,16 @@ translateProcess maxInt (VP.ActionPrefix act proc) = case act of
       _ -> Left $ "Unevaluated expression while translating action prefix: " ++ show (VP.ActionPrefix (VP.ActionName (Input name) (Just expr)) proc)
     -- if it's an output action, compute the new action name by evaluating the expression and translate the prefixed process
     (Output name, Just expr) -> do
-      val <- evalArit expr
+      val <- evalArit expr maxInt
       let newActName = pack $ unpack name ++ "_" ++ show val
       Pure.ActionPrefix (Pure.ActionName (Output newActName)) <$> translateProcess maxInt proc
   -- internal actions remain unchanged
   (VP.Tau) -> Pure.ActionPrefix (Pure.Tau) <$> translateProcess maxInt proc
 translateProcess maxInt (VP.Choice p1 p2) = Pure.Choice <$> translateProcess maxInt p1 <*> translateProcess maxInt p2
 translateProcess maxInt (VP.Parallel p1 p2) = Pure.Parallel <$> translateProcess maxInt p1 <*> translateProcess maxInt p2
-translateProcess maxInt (VP.Relabelling p f) = Pure.Relabelling <$> translateProcess maxInt p <*> pure (translateRelabFn 0 maxInt f)
+translateProcess maxInt (VP.Relabelling p f) = Pure.Relabelling <$> translateProcess maxInt p <*> translateRelabFn 0 maxInt f
 translateProcess maxInt (VP.Restriction p s) = Pure.Restriction <$> translateProcess maxInt p <*> pure (translateRestrictSet 0 maxInt s)
-translateProcess maxInt (VP.IfThenElse guard p1 p2) = if evalBool guard then translateProcess maxInt p1 else translateProcess maxInt p2
+translateProcess maxInt (VP.IfThenElse guard p1 p2) = if evalBool guard maxInt then translateProcess maxInt p1 else translateProcess maxInt p2
 
 -- Given boundaries of a range and a process, generate a nd choice of pure processes based on the range of values
 generateBoundedChoice :: Int -> Int -> VP.Process -> Either String Pure.Process
@@ -77,12 +77,14 @@ concatV [] _ = ""
 concatV as c = pack $ c <> intercalate c (map show as)
 
 -- Translate a relabelling function by applying each mapping for all possible input values
-translateRelabFn :: Int -> Int -> RelabellingFunction -> RelabellingFunction
-translateRelabFn _ _ (RelabellingFunction []) = RelabellingFunction []
+translateRelabFn :: Int -> Int -> RelabellingFunction -> Either String RelabellingFunction
+translateRelabFn _ _ (RelabellingFunction []) = Right $ RelabellingFunction []
 translateRelabFn lowerBound higherBound (RelabellingFunction (f : fs)) = do
+  -- check that the relabellings is legal, i.e., the froms must be unique
+  _ <- checkLegal (f : fs)
   let headF = translateMapping lowerBound higherBound f
-  let RelabellingFunction mappings = translateRelabFn lowerBound higherBound (RelabellingFunction fs)
-  RelabellingFunction $ headF <> mappings
+  RelabellingFunction mappings <- translateRelabFn lowerBound higherBound (RelabellingFunction fs)
+  return $ RelabellingFunction $ headF <> mappings
   where
     translateMapping :: Int -> Int -> RelabellingMapping -> [RelabellingMapping]
     translateMapping l h _ | l > h = []
@@ -90,6 +92,17 @@ translateRelabFn lowerBound higherBound (RelabellingFunction (f : fs)) = do
       let newFrom = from <> "_" <> (pack $ show l)
       let newTo = to <> "_" <> (pack $ show l)
       [RelabellingMapping newFrom newTo] <> translateMapping (l + 1) h (RelabellingMapping from to)
+    checkIn :: RelabellingMapping -> [RelabellingMapping] -> Either String ()
+    checkIn _ [] = Right ()
+    checkIn (RelabellingMapping to from) ((RelabellingMapping to2 from2) : xs) =
+      if from == from2
+        then Left $ "Found an invalid relabelling. Mapping: " ++ show (RelabellingMapping to2 from2) ++ " is remapping: " ++ show (RelabellingMapping to from)
+        else checkIn (RelabellingMapping to from) xs
+    checkLegal :: [RelabellingMapping] -> Either String ()
+    checkLegal [] = Right ()
+    checkLegal (x : xs) = do
+      _ <- checkIn x xs
+      checkLegal xs
 
 -- Translate a restriction set by restricting the channels across all possible input values
 translateRestrictSet :: Int -> Int -> Set Text -> Set Text

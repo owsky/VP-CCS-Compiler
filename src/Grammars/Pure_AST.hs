@@ -37,14 +37,16 @@ instance Show Process where
     (ProcessName "0") -> show p1
     _ -> show p1 ++ " + " ++ show p2
   show (Parallel p1 p2) = show p1 ++ " | " ++ show p2
-  show (Relabelling p fn) = show p ++ show fn
-  show (Restriction p s) = show p ++ " \\ {" ++ intercalate ", " (map unpack (sort (toList s))) ++ "}"
+  show (Relabelling p fn) = "(" ++ show p ++ ")" ++ show fn
+  show (Restriction p s) = "(" ++ show p ++ ")" ++ " \\ {" ++ intercalate ", " (map unpack (sort (toList s))) ++ "}"
 
 -- | AST for statements
 data Statement
   = Assignment Process Process
+  | Expression Process
   deriving (Eq)
 
 instance Show Statement where
   show :: Statement -> String
   show (Assignment p1 p2) = show p1 ++ " = " ++ show p2
+  show (Expression p) = show p
