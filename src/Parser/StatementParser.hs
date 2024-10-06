@@ -13,6 +13,8 @@ import Text.Megaparsec (MonadParsec (eof, label), (<|>))
 import Text.Megaparsec.Char (eol)
 import Translator.Translate (translateStatement)
 
+-- | Invokes the statement parser after consuming all preceding whitespace
+-- | and consumes either an end of line or an end of file afterwards
 parseStatement :: Int -> Parser [Pure.Statement]
 parseStatement maxInt = sc' *> pStatement maxInt <* (void eol <|> eof)
 

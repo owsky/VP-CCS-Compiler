@@ -12,16 +12,12 @@ import Translator.Substitute (substitute)
 -- | Translates a VP-CCS Statement into a CCS Statement
 translateStatement :: Int -> VP.Statement -> Either String [Pure.Statement]
 translateStatement maxInt (VP.Assignment p1 p2) = case p1 of
-  (VP.ProcessName _ []) -> do
-    newProc1 <- translateProcess maxInt p1
-    newProc2 <- translateProcess maxInt p2
-    Right [Pure.Assignment newProc1 newProc2]
+  (VP.ProcessName _ []) -> (\newProc1 newProc2 -> [Pure.Assignment newProc1 newProc2]) <$> translateProcess maxInt p1 <*> translateProcess maxInt p2
   (VP.ProcessName procName ((AVar varName) : exprs)) -> do
     -- for each variable, concretize it within the nat range and substitute into p2, create a list of procnames for p1 with the concretized variables
     let m = aux 0 maxInt varName procName p2
     let stmts = [VP.Assignment (VP.ProcessName newProcName exprs) rhs | (newProcName, rhs) <- m]
-    let eStatements = map (\s -> translateStatement maxInt s) stmts
-    statements <- mapM id eStatements
+    statements <- mapM (\s -> translateStatement maxInt s) stmts
     return $ concat statements
   _ -> error "You can only assign to process names"
   where
@@ -33,78 +29,72 @@ translateStatement maxInt (VP.Assignment p1 p2) = case p1 of
       (newProcName, newRhs) : aux (lowerBound + 1) higherBound varName procName rhs
 
 translateProcess :: Int -> VP.Process -> Either String Pure.Process
+-- a process name gets its expressions evaluated (if any) and the pure process uses the concrete values in its name
 translateProcess _ (VP.ProcessName name exprs) = do
-  let eVals = map evalArit exprs
-  vals <- mapM id eVals
-  let newProcName = name <> concatV vals "_"
-  Right $ Pure.ProcessName newProcName []
-translateProcess maxInt (VP.ActionPrefix (VP.ActionName (Input name) Nothing) proc) = do
-  newProc <- (translateProcess maxInt proc)
-  return $ Pure.ActionPrefix (Pure.ActionName (Input name) Nothing) newProc
-translateProcess maxInt (VP.ActionPrefix (VP.ActionName (Input name) (Just expr)) proc) = case expr of
-  AVar _ -> generateBoundedChoice 0 maxInt (VP.ActionPrefix (VP.ActionName (Input name) (Just expr)) proc)
-  AVal val -> do
-    newProc <- (translateProcess maxInt proc)
-    return $ Pure.ActionPrefix (Pure.ActionName (Input $ name <> concatV [val] "_") Nothing) newProc
-  _ -> error $ "Unevaluated expression while translating action prefix: " ++ show (VP.ActionPrefix (VP.ActionName (Input name) (Just expr)) proc)
-translateProcess maxInt (VP.ActionPrefix (VP.ActionName (Output name) Nothing) proc) = do
-  newProc <- translateProcess maxInt proc
-  return $ Pure.ActionPrefix (Pure.ActionName (Output name) Nothing) newProc
-translateProcess maxInt (VP.ActionPrefix (VP.ActionName (Output name) (Just var)) proc) = do
-  val <- evalArit var
-  let newActName = pack $ unpack name ++ "_" ++ show val
-  newProc <- (translateProcess maxInt proc)
-  return $ Pure.ActionPrefix (Pure.ActionName (Output newActName) Nothing) newProc
-translateProcess maxInt (VP.ActionPrefix VP.Tau proc) = do
-  newProc <- (translateProcess maxInt proc)
-  return $ Pure.ActionPrefix (Pure.Tau) newProc
-translateProcess maxInt (VP.Choice p1 p2) = do
-  newProc1 <- (translateProcess maxInt p1)
-  newProc2 <- (translateProcess maxInt p2)
-  return $ Pure.Choice newProc1 newProc2
-translateProcess maxInt (VP.Parallel p1 p2) = do
-  newProc1 <- translateProcess maxInt p1
-  newProc2 <- translateProcess maxInt p2
-  return $ Pure.Parallel newProc1 newProc2
-translateProcess maxInt (VP.Relabelling p f) = do
-  newProc <- (translateProcess maxInt p)
-  let relabFn = (translateRelabFn 0 maxInt f)
-  return $ Pure.Relabelling newProc relabFn
-translateProcess maxInt (VP.Restriction p s) = do
-  newProc <- translateProcess maxInt p
-  let resSet = translateRestrictSet 0 maxInt s
-  return $ Pure.Restriction newProc resSet
+  vals <- mapM evalArit exprs
+  return $ Pure.ProcessName $ name <> concatV vals "_"
+-- an action prefix translation is discriminated depending on what kind of action and expression it carries
+translateProcess maxInt (VP.ActionPrefix act proc) = case act of
+  -- if it's a named action then the combination of label and expression determines the logic
+  (VP.ActionName label mExpr) -> case (label, mExpr) of
+    -- if no expression is found, create a simple pure action prefix and translate the prefixed process
+    (_, Nothing) -> Pure.ActionPrefix (Pure.ActionName label) <$> translateProcess maxInt proc
+    -- if it's an input action decide based upon the kind of expression
+    (Input name, Just expr) -> case expr of
+      -- with a variable generate all possible nd process combinations to support the full range of possible inputs
+      AVar _ -> generateBoundedChoice 0 maxInt (VP.ActionPrefix (VP.ActionName (Input name) (Just expr)) proc)
+      -- with a value simply create the new label and translte the prefixed process
+      AVal val -> Pure.ActionPrefix (Pure.ActionName (Input $ name <> concatV [val] "_")) <$> translateProcess maxInt proc
+      -- any other kind of expression is not allowed at this point
+      _ -> Left $ "Unevaluated expression while translating action prefix: " ++ show (VP.ActionPrefix (VP.ActionName (Input name) (Just expr)) proc)
+    -- if it's an output action, compute the new action name by evaluating the expression and translate the prefixed process
+    (Output name, Just expr) -> do
+      val <- evalArit expr
+      let newActName = pack $ unpack name ++ "_" ++ show val
+      Pure.ActionPrefix (Pure.ActionName (Output newActName)) <$> translateProcess maxInt proc
+  -- internal actions remain unchanged
+  (VP.Tau) -> Pure.ActionPrefix (Pure.Tau) <$> translateProcess maxInt proc
+translateProcess maxInt (VP.Choice p1 p2) = Pure.Choice <$> translateProcess maxInt p1 <*> translateProcess maxInt p2
+translateProcess maxInt (VP.Parallel p1 p2) = Pure.Parallel <$> translateProcess maxInt p1 <*> translateProcess maxInt p2
+translateProcess maxInt (VP.Relabelling p f) = Pure.Relabelling <$> translateProcess maxInt p <*> pure (translateRelabFn 0 maxInt f)
+translateProcess maxInt (VP.Restriction p s) = Pure.Restriction <$> translateProcess maxInt p <*> pure (translateRestrictSet 0 maxInt s)
 translateProcess maxInt (VP.IfThenElse guard p1 p2) = if evalBool guard then translateProcess maxInt p1 else translateProcess maxInt p2
 
+-- Given boundaries of a range and a process, generate a nd choice of pure processes based on the range of values
 generateBoundedChoice :: Int -> Int -> VP.Process -> Either String Pure.Process
-generateBoundedChoice lowerBound higherBound _ | lowerBound > higherBound = Right $ Pure.ProcessName "0" []
+generateBoundedChoice lowerBound higherBound _ | lowerBound > higherBound = Right $ Pure.ProcessName "0"
 generateBoundedChoice lowerBound higherBound (VP.ActionPrefix (VP.ActionName (Input name) (Just (AVar var))) p) = do
   let newLabelName = name <> concatV [lowerBound] "_"
-  let newAct = Pure.ActionName (Input newLabelName) Nothing
+  let newAct = Pure.ActionName (Input newLabelName)
   newProc <- translateProcess higherBound (substitute var lowerBound p)
   recChoice <- (generateBoundedChoice (lowerBound + 1) higherBound (VP.ActionPrefix (VP.ActionName (Input name) (Just (AVar var))) p))
   return $ Pure.Choice (Pure.ActionPrefix newAct newProc) recChoice
 generateBoundedChoice _ _ p = error $ "Unexpected case, got: " ++ show p
 
+-- Given a list of showables and a string, produce a text which concatenates all the showables with the given string in-between
 concatV :: (Show a) => [a] -> String -> Text
 concatV [] _ = ""
 concatV as c = pack $ c <> intercalate c (map show as)
 
+-- Translate a relabelling function by applying each mapping for all possible input values
 translateRelabFn :: Int -> Int -> RelabellingFunction -> RelabellingFunction
 translateRelabFn _ _ (RelabellingFunction []) = RelabellingFunction []
-translateRelabFn lowerBound higherBound (RelabellingFunction (f : fs)) =
-  RelabellingFunction $ aux lowerBound higherBound f <> mappings
+translateRelabFn lowerBound higherBound (RelabellingFunction (f : fs)) = do
+  let headF = translateMapping lowerBound higherBound f
+  let RelabellingFunction mappings = translateRelabFn lowerBound higherBound (RelabellingFunction fs)
+  RelabellingFunction $ headF <> mappings
   where
-    RelabellingFunction mappings = translateRelabFn lowerBound higherBound (RelabellingFunction fs)
-    -- aux :: Int -> Int -> VP.RelabellingMapping -> [Pure.RelabellingMapping]
-    aux l h _ | l > h = []
-    aux l h (RelabellingMapping from to) = do
-      let newFrom = pack $ unpack from ++ "_" ++ show l
-      let newTo = pack $ unpack to ++ "_" ++ show l
-      [RelabellingMapping newFrom newTo] <> aux (l + 1) h (RelabellingMapping from to)
+    translateMapping :: Int -> Int -> RelabellingMapping -> [RelabellingMapping]
+    translateMapping l h _ | l > h = []
+    translateMapping l h (RelabellingMapping from to) = do
+      let newFrom = from <> "_" <> (pack $ show l)
+      let newTo = to <> "_" <> (pack $ show l)
+      [RelabellingMapping newFrom newTo] <> translateMapping (l + 1) h (RelabellingMapping from to)
 
+-- Translate a restriction set by restricting the channels across all possible input values
 translateRestrictSet :: Int -> Int -> Set Text -> Set Text
 translateRestrictSet lowerBound higherBound labels = fromList . map pack . concatMap (genConcreteNames lowerBound higherBound) $ toList labels
 
+-- Given an input range and a channel name, return a list of channel names that spans across the whole input range
 genConcreteNames :: Int -> Int -> Text -> [String]
 genConcreteNames lowerBound higherBound a = [unpack a ++ "_" ++ show i | i <- [lowerBound .. higherBound]]

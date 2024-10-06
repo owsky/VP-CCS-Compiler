@@ -72,7 +72,7 @@ decimal = lexeme L.decimal
 pWord :: Text -> Parser Text
 pWord word = try $ string word <* (void hspace1 <|> eof)
 
--- Define the function
+-- | Function which extracts the value from an Either and wraps it in a monad
 eitherToMonad :: (Monad m, MonadFail m) => Either String a -> m a
 eitherToMonad (Left err) = fail err
 eitherToMonad (Right val) = return val
