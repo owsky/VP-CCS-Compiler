@@ -9,7 +9,7 @@ import Grammars.VP_AST as VP (Action (..), Process (..), Statement (..))
 import Parser.Token (Token (..))
 import Parser.TokenParser (pToken)
 import Parser.Utils (Parser, eitherToMonad, sc', symbol)
-import Text.Megaparsec (MonadParsec (eof, label, try), choice, (<|>))
+import Text.Megaparsec (MonadParsec (eof, label), optional, (<|>))
 import Text.Megaparsec.Char (eol)
 import Translator.Translate (translateProcess, translateStatement)
 
@@ -18,25 +18,20 @@ import Translator.Translate (translateProcess, translateStatement)
 parseStatement :: Int -> Parser [Pure.Statement]
 parseStatement maxInt = sc' *> pStatement maxInt <* (void eol <|> eof)
 
+-- | Parser for either assignments or expressions
 pStatement :: Int -> Parser [Pure.Statement]
-pStatement maxInt = choice [pAssignment maxInt, pExpression maxInt]
-
-pExpression :: Int -> Parser [Pure.Statement]
-pExpression maxInt = label "expression" $ do
-  tok <- pToken
-  p <- eitherToMonad $ tokenToProcess tok
-  newP <- eitherToMonad $ translateProcess maxInt p
-  return [Expression newP]
-
--- | Statement parser
-pAssignment :: Int -> Parser [Pure.Statement]
-pAssignment maxInt = label "assignment" $ try $ do
+pStatement maxInt = do
   lhs <- pToken
   lhsP <- eitherToMonad $ tokenToProcess lhs
-  _ <- symbol "="
-  rhs <- pToken
-  rhsP <- eitherToMonad $ tokenToProcess rhs
-  eitherToMonad $ translateStatement maxInt (VP.Assignment lhsP rhsP)
+  equal <- optional $ symbol "="
+  case equal of
+    Just _ -> label "assignment" $ do
+      rhs <- pToken
+      rhsP <- eitherToMonad $ tokenToProcess rhs
+      eitherToMonad $ translateStatement maxInt (VP.Assignment lhsP rhsP)
+    Nothing -> label "expression" $ do
+      newProcess <- eitherToMonad $ translateProcess maxInt lhsP
+      return [Expression newProcess]
 
 -- | Attempts to convert a given token into an action
 tokenToAction :: Token -> Either String Action

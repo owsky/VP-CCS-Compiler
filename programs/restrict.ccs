@@ -1,0 +1,15 @@
+A_0 = 'outa_0.B_1
+A_1 = 'outa_2.B_2
+A_2 = 'outa_4.B_3
+A_3 = 'outa_6.B_4
+A_4 = 'outa_6.B_5
+A_5 = 'outa_6.B_6
+A_6 = 'outa_6.B_6
+B_0 = 'outb_0.A_4
+B_1 = 'outb_0.A_5
+B_2 = 'outb_0.A_6
+B_3 = 'outb_0.A_6
+B_4 = 'outb_1.A_6
+B_5 = 'outb_2.A_6
+B_6 = 'outb_3.A_6
+(A_5 | B_5) \ {outa_0, outa_1, outa_2, outa_3, outa_4, outa_5, outa_6, outb_0, outb_1, outb_2, outb_3, outb_4, outb_5, outb_6}

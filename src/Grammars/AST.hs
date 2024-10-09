@@ -31,7 +31,7 @@ data AExpr
 instance Show AExpr where
   show :: AExpr -> String
   show (AVal val) = show val
-  show (AVar var) = show var
+  show (AVar var) = unpack var
   show (Sum e1 e2) = binaryShow e1 "+" e2
   show (Min e1 e2) = binaryShow e1 "-" e2
   show (Mul e1 e2) = binaryShow e1 "*" e2

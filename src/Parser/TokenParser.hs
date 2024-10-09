@@ -32,7 +32,7 @@ operatorTable =
 
 -- | Parser for process names
 pTProc :: Parser Token
-pTProc = do
+pTProc = label "process constant" $ do
   name <- lexeme (choice [(:) <$> upperChar <*> many (alphaNumChar <|> char '_'), pure <$> char '0']) >>= checkReserved . pack <?> "process name"
   exprs <- option [] (roundParens (pAExpr `sepBy1` comma)) <?> "process variables"
   if name == "0" && not (null exprs)

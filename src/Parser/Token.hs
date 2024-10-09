@@ -1,5 +1,6 @@
 module Parser.Token (Token (..)) where
 
+import Data.List (intercalate)
 import Data.Set (Set)
 import Data.Text (Text, unpack)
 import Grammars.AST (AExpr, BExpr, RelabellingFunction)
@@ -26,7 +27,7 @@ instance Show Token where
     where
       showInternal :: Token -> String
       showInternal (TProc name []) = unpack name
-      showInternal (TProc name vars) = unpack name <> "(" <> show vars <> ")"
+      showInternal (TProc name vars) = unpack name <> "(" <> intercalate ", " (map show vars) <> ")"
       showInternal (TActIn name Nothing) = unpack name
       showInternal (TActIn name (Just e)) = unpack name <> "(" <> show e <> ")"
       showInternal (TActOut name Nothing) = unpack name
