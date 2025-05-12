@@ -78,34 +78,34 @@ Some example programs are provided within the ```programs``` directory.
 Both standard CCS and the value-passing extension exhibit the same expressiveness since standard CCS can encode values. This is the pseudo-code of the encoding function:
 
 ### Definitions
-Set of actions:
-<img src="assets/actions_set.png" height="80">
-Set of process constants:
-<img src="assets/process_constants_set.png" height="80">
+Set of actions:  
+<img src="assets/actions_set.png" height="80">  
+Set of process constants:  
+<img src="assets/process_constants_set.png" height="80">  
 
 ### Action Prefixing
-Input action on channel a:
-<img src="assets/action_prefix_input.png" height="80">
-Output action on channel a:
-<img src="assets/action_prefix_output.png" height="80">
-Internal synchronization:
-<img src="assets/action_prefix_tau.png" height="80">
+Input action on channel a:  
+<img src="assets/action_prefix_input.png" height="80">  
+Output action on channel a:  
+<img src="assets/action_prefix_output.png" height="80">  
+Internal synchronization:  
+<img src="assets/action_prefix_tau.png" height="80">  
 
 ### Process Algebra
-Non-deterministic choice:
-<img src="assets/choice.png" height="100">
-Parallel execution:
-<img src="assets/par.png" height="80">
-Channel restriction:
-<img src="assets/res.png" height="80">
-Relabeling:
-<img src="assets/rel.png" height="80">
+Non-deterministic choice:  
+<img src="assets/choice.png" height="100">  
+Parallel execution:  
+<img src="assets/par.png" height="80">  
+Channel restriction:  
+<img src="assets/res.png" height="80">  
+Relabeling:  
+<img src="assets/rel.png" height="80">  
 
 ### Conditions
-If then else:
-<img src="assets/if_then_else.png" height="100">
+If then else:  
+<img src="assets/if_then_else.png" height="100">  
 
 ### Process Constants
-Encoding of input expressions for process constants:
-<img src="assets/process_constants.png" height="80">
+Encoding of input expressions for process constants:  
+<img src="assets/process_constants.png" height="80">  
 <img src="assets/process_constants_2.png" height="80">
