@@ -81,33 +81,33 @@ Both standard CCS and the value-passing extension exhibit the same expressivenes
 
 ### Definitions
 Set of actions:  
-<img src="assets/actions_set.png" height="80">  
+<img src="assets/actions_set.png" style="max-height: 80px; width: auto;">  
 Set of process constants:  
-<img src="assets/process_constants_set.png" height="80">  
+<img src="assets/process_constants_set.png" style="max-height: 80px; width: auto;">  
 
 ### Action Prefixing
 Input action on channel a:  
-<img src="assets/action_prefix_input.png" height="80">  
+<img src="assets/action_prefix_input.png" style="max-height: 80px; width: auto;">  
 Output action on channel a:  
-<img src="assets/action_prefix_output.png" height="80">  
+<img src="assets/action_prefix_output.png" style="max-height: 80px; width: auto;">  
 Internal synchronization:  
-<img src="assets/action_prefix_tau.png" height="80">  
+<img src="assets/action_prefix_tau.png" style="max-height: 80px; width: auto;">  
 
 ### Process Algebra
 Non-deterministic choice:  
-<img src="assets/choice.png" height="100">  
+<img src="assets/choice.png" style="max-height: 100px; width: auto;">  
 Parallel execution:  
-<img src="assets/par.png" height="80">  
+<img src="assets/par.png" style="max-height: 80px; width: auto;">  
 Channel restriction:  
-<img src="assets/res.png" height="80">  
+<img src="assets/res.png" style="max-height: 80px; width: auto;">  
 Relabeling:  
-<img src="assets/rel.png" height="80">  
+<img src="assets/rel.png"style="height: 80px; width: auto;">  
 
 ### Conditions
 If then else:  
-<img src="assets/if_then_else.png" height="100">  
+<img src="assets/if_then_else.png" style="max-height: 100px; width: auto;">  
 
 ### Process Constants
 Encoding of input expressions for process constants:  
-<img src="assets/process_constants.png" height="80">  
-<img src="assets/process_constants_2.png" height="80">
+<img src="assets/process_constants.png" style="max-height: 80px; width: auto;">  
+<img src="assets/process_constants_2.png" style="max-height: 80px; width: auto;">
