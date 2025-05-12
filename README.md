@@ -3,7 +3,7 @@ Compiler which transpiles code written in the _Value Passing_ version of the [Ca
 
 The following grammar defines the standard syntax used in CCS:
 
-```ebnf
+```
 P :=        # process
   | 0       # inactive process
   | a.P     # prefix: input in channel a followed by P
@@ -17,7 +17,7 @@ P :=        # process
 
 This language can be extended to include values for better development experience:
 
-```ebnf
+```
 P :=                     # process
   | 0                    # inactive process
   | a(x).P               # prefix: receive a value into variable x through channel a, followed by P
