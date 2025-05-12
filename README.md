@@ -41,6 +41,8 @@ a :=                     # arithmetic expressions
   | a * a                # multiplication
 
 b :=                     # Boolean expressions
+  | tt                   # True constant
+  | ff                   # False constant
   | e = e                # equality
   | e ≤ e                # less than or equal to
   | e < e                # less than
